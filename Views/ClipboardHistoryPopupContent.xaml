@@ -9,9 +9,12 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="using:WindowSill.ClipboardHistory.UI"
     xmlns:vm="using:WindowSill.ClipboardHistory.ViewModels"
-    MinWidth="380"
-    MinHeight="100"
-    MaxHeight="600"
+    Width="360"
+    Height="400"
+    MinWidth="360"
+    MinHeight="400"
+    MaxWidth="360"
+    MaxHeight="400"
     Loaded="ClipboardHistoryPopupContent_Loaded"
     mc:Ignorable="d">
 

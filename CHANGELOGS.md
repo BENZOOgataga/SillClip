@@ -1,4 +1,5 @@
 # 0.10.0-unlimited.1
+- Set the clipboard popup to 360 by 400 logical pixels.
 - Fixed Start opening when the Windows key is released after Win+V.
 - Fixed Escape closing the history when the search field has focus.
 - Added DPAPI-encrypted persistent clipboard history.
