@@ -1,9 +1,9 @@
 # WindowSill Clipboard History — No Limit
 
-A minimal fork of WindowSill's official **Clipboard History** extension. All original features and UI are preserved; only the **Maximum number of items** setting has been changed.
+This is a fork of WindowSill's official **Clipboard History** extension. The only functional change is the range accepted by **Maximum number of items**.
 
 - `-1` or `0`: WindowSill applies no item limit.
-- Any positive value (`25`, `500`, `1000`, and so on): requested maximum number of items.
+- Any positive value (`25`, `500`, `1000`, etc.): maximum number of items requested from the Windows clipboard history.
 
 ## Build
 
@@ -21,13 +21,22 @@ dotnet build -c Release
 
 The DLL and WindowSill package (`.nupkg`) are generated under `bin/Release/`.
 
-A WindowSill extension should not be installed as a standalone DLL: the `.nupkg` also contains its compiled XAML views and resources. To test locally, open the project in Visual Studio, select the **x64** platform and the **WindowSill Extension** launch profile, then press F5. The profile passes the package to WindowSill through `EXTRAPLUGIN`.
+Do not install the DLL by itself. The `.nupkg` also contains the compiled XAML views and resources.
 
-This fork deliberately keeps the same internal Sill name and `PackageId` as the official extension so that it can replace it. Disable or uninstall the official version before loading this package.
+To test the extension:
+
+1. Open the project in Visual Studio.
+2. Select the **x64** platform.
+3. Select the **WindowSill Extension** launch profile.
+4. Press F5.
+
+The launch profile passes the package to WindowSill through `EXTRAPLUGIN`.
+
+The fork uses the same internal Sill name and `PackageId` as the official extension. Disable or uninstall the official version before loading this package.
 
 ## Windows limitation
 
-This change removes the limit applied by WindowSill. It cannot force `Windows.ApplicationModel.DataTransfer.Clipboard.GetHistoryItemsAsync()` to return more entries than Windows itself retains. A truly independent history containing hundreds of entries would require a separate capture and storage engine, rather than this deliberately minimal fork.
+This change removes WindowSill's limit. It does not change how many entries Windows keeps. The extension can only display the entries returned by `Windows.ApplicationModel.DataTransfer.Clipboard.GetHistoryItemsAsync()`.
 
 ## Credits and license
 
