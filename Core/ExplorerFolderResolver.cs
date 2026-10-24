@@ -128,7 +128,7 @@ internal static class ExplorerFolderResolver
                     }
                     catch
                     {
-                        // Ignored — COM calls may fail for certain shell windows
+                        // Ignored because COM calls may fail for certain shell windows.
                     }
                     finally
                     {
@@ -188,7 +188,7 @@ internal static class ExplorerFolderResolver
             }
             catch
             {
-                // Ignored — COM calls may fail for certain shell windows
+                // Ignored because COM calls may fail for certain shell windows.
             }
             finally
             {
@@ -238,7 +238,7 @@ internal static class ExplorerFolderResolver
         else if (location.StartsWith("::", StringComparison.Ordinal)
             || location.StartsWith("{", StringComparison.Ordinal))
         {
-            // Virtual/shell folder — not a filesystem path
+            // A virtual or shell folder is not a filesystem path.
             return null;
         }
         else if (!System.IO.Path.IsPathRooted(location))
@@ -370,7 +370,7 @@ internal static class ExplorerFolderResolver
     }
 
     /// <summary>
-    /// Minimal COM <c>IShellBrowser</c> definition — only <c>GetWindow</c> is needed.
+    /// Minimal COM <c>IShellBrowser</c> definition. Only <c>GetWindow</c> is needed.
     /// </summary>
     [ComImport]
     [Guid("000214E2-0000-0000-C000-000000000046")]

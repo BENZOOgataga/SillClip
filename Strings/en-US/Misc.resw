@@ -162,4 +162,34 @@
   <data name="Unpin" xml:space="preserve">
     <value>Unpin</value>
   </data>
+  <data name="SearchPlaceholder" xml:space="preserve">
+    <value>Search clipboard history</value>
+  </data>
+  <data name="NoSearchResults" xml:space="preserve">
+    <value>No matching clipboard items</value>
+  </data>
+  <data name="SearchHistory" xml:space="preserve">
+    <value>Search clipboard history</value>
+  </data>
+  <data name="UpdateChecking" xml:space="preserve">
+    <value>Checking GitHub Releases...</value>
+  </data>
+  <data name="UpdateFailed" xml:space="preserve">
+    <value>Could not check GitHub Releases.</value>
+  </data>
+  <data name="UpdateAvailable" xml:space="preserve">
+    <value>Version {0} is available.</value>
+  </data>
+  <data name="UpdateCurrent" xml:space="preserve">
+    <value>Current version: {0}. Updates are checked automatically.</value>
+  </data>
+  <data name="UpdateNoRelease" xml:space="preserve">
+    <value>No GitHub release has been published yet.</value>
+  </data>
+  <data name="OpenRelease" xml:space="preserve">
+    <value>Open release</value>
+  </data>
+  <data name="CheckNow" xml:space="preserve">
+    <value>Check now</value>
+  </data>
 </root>

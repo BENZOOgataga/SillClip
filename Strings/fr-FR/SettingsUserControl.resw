@@ -130,7 +130,7 @@
     <value>Masquer les mots de passe</value>
   </data>
   <data name="MaxItemNumber.DescriptionProperty" xml:space="preserve">
-    <value>Combien d’éléments doivent être conservés dans l’historique du presse-papiers</value>
+    <value>Utilisez 0 ou -1 pour ne pas limiter le nombre d'elements</value>
   </data>
   <data name="MaxItemNumber.HeaderProperty" xml:space="preserve">
     <value>Nombre maximum d’éléments</value>
@@ -143,5 +143,20 @@
   </data>
   <data name="CompactMode.DescriptionProperty" xml:space="preserve">
     <value>Afficher tous les éléments du presse-papiers dans une seule fenêtre contextuelle au lieu d’éléments individuels dans la barre</value>
+  </data>
+  <data name="PersistentHistory.HeaderProperty" xml:space="preserve">
+    <value>Historique persistant</value>
+  </data>
+  <data name="PersistentHistory.DescriptionProperty" xml:space="preserve">
+    <value>Conserver un historique chiffre apres les redemarrages de Windows et WindowSill</value>
+  </data>
+  <data name="OverrideWindowsV.HeaderProperty" xml:space="preserve">
+    <value>Ouvrir cet historique avec Win+V</value>
+  </data>
+  <data name="OverrideWindowsV.DescriptionProperty" xml:space="preserve">
+    <value>Remplacer le panneau Windows tant que cette extension est active</value>
+  </data>
+  <data name="Updates.HeaderProperty" xml:space="preserve">
+    <value>Mises a jour de l'extension</value>
   </data>
 </root>

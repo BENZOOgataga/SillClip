@@ -16,6 +16,7 @@ internal sealed class ClipboardItemViewFactory
     private readonly ISettingsProvider _settingsProvider;
     private readonly IProcessInteractionService _processInteractionService;
     private readonly PinnedClipboardService _pinnedService;
+    private readonly PersistentClipboardService _persistentService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ClipboardItemViewFactory"/> class.
@@ -28,12 +29,14 @@ internal sealed class ClipboardItemViewFactory
         IPluginInfo pluginInfo,
         ISettingsProvider settingsProvider,
         IProcessInteractionService processInteractionService,
-        PinnedClipboardService pinnedService)
+        PinnedClipboardService pinnedService,
+        PersistentClipboardService persistentService)
     {
         _pluginInfo = pluginInfo;
         _settingsProvider = settingsProvider;
         _processInteractionService = processInteractionService;
         _pinnedService = pinnedService;
+        _persistentService = persistentService;
     }
 
     /// <summary>
@@ -59,6 +62,7 @@ internal sealed class ClipboardItemViewFactory
         };
 
         viewModel.ConfigurePinning(itemData, _pinnedService);
+        viewModel.ConfigurePersistence(itemData, _persistentService);
         return viewModel;
     }
 
@@ -84,6 +88,7 @@ internal sealed class ClipboardItemViewFactory
         };
 
         result.ViewModel.ConfigurePinning(itemData, _pinnedService);
+        result.ViewModel.ConfigurePersistence(itemData, _persistentService);
         return result;
     }
 

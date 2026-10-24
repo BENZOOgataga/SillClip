@@ -39,6 +39,20 @@
                 Value="{x:Bind ViewModel.MaximumHistoryCount, Mode=TwoWay}" />
         </controls:SettingsCard>
 
+        <controls:SettingsCard api:Uids.Uid="/WindowSill.ClipboardHistory/SettingsUserControl/PersistentHistory">
+            <controls:SettingsCard.HeaderIcon>
+                <FontIcon Glyph="&#xE753;" />
+            </controls:SettingsCard.HeaderIcon>
+            <ToggleSwitch IsOn="{x:Bind ViewModel.PersistentHistory, Mode=TwoWay}" />
+        </controls:SettingsCard>
+
+        <controls:SettingsCard api:Uids.Uid="/WindowSill.ClipboardHistory/SettingsUserControl/OverrideWindowsV">
+            <controls:SettingsCard.HeaderIcon>
+                <FontIcon Glyph="&#xE765;" />
+            </controls:SettingsCard.HeaderIcon>
+            <ToggleSwitch IsOn="{x:Bind ViewModel.OverrideWindowsV, Mode=TwoWay}" />
+        </controls:SettingsCard>
+
         <controls:SettingsCard api:Uids.Uid="/WindowSill.ClipboardHistory/SettingsUserControl/HidePasswords">
             <controls:SettingsCard.HeaderIcon>
                 <FontIcon Glyph="&#xE9A9;" />
@@ -70,6 +84,18 @@
             <controls:SettingsCard.ActionIcon>
                 <FontIcon Glyph="&#xE8A7;" />
             </controls:SettingsCard.ActionIcon>
+        </controls:SettingsCard>
+
+        <controls:SettingsCard
+            api:Uids.Uid="/WindowSill.ClipboardHistory/SettingsUserControl/Updates"
+            Description="{x:Bind ViewModel.UpdateStatus, Mode=OneWay}">
+            <controls:SettingsCard.HeaderIcon>
+                <FontIcon Glyph="&#xE895;" />
+            </controls:SettingsCard.HeaderIcon>
+            <Button
+                Click="UpdateActionButton_Click"
+                Content="{x:Bind ViewModel.UpdateActionText, Mode=OneWay}"
+                IsEnabled="{x:Bind ViewModel.IsUpdateActionEnabled, Mode=OneWay}" />
         </controls:SettingsCard>
     </StackPanel>
 </UserControl>

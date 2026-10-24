@@ -118,7 +118,7 @@ internal static class ClipboardFileWriter
             }
         }
 
-        // Fallback — extremely unlikely
+        // Fallback for an unexpected name collision.
         return Path.Combine(folder, baseName + extension);
     }
 

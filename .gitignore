@@ -20,6 +20,7 @@
 packages/
 *.nupkg
 *.snupkg
+*.wsext
 *.nuget.props
 *.nuget.targets
 

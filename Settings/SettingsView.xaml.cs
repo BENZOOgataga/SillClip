@@ -1,5 +1,6 @@
 using Windows.System;
 using WindowSill.API;
+using WindowSill.ClipboardHistory.Services;
 
 namespace WindowSill.ClipboardHistory.Settings;
 
@@ -8,9 +9,9 @@ namespace WindowSill.ClipboardHistory.Settings;
 /// </summary>
 internal sealed partial class SettingsView : UserControl
 {
-    internal SettingsView(ISettingsProvider settingsProvider)
+    internal SettingsView(ISettingsProvider settingsProvider, GitHubUpdateService updateService)
     {
-        ViewModel = new SettingsViewModel(settingsProvider);
+        ViewModel = new SettingsViewModel(settingsProvider, updateService);
         InitializeComponent();
     }
 
@@ -22,5 +23,16 @@ internal sealed partial class SettingsView : UserControl
     private async void OpenWindowsClipboardHistorySettingsCard_Click(object sender, RoutedEventArgs e)
     {
         await Launcher.LaunchUriAsync(new Uri("ms-settings:clipboard"));
+    }
+
+    private async void UpdateActionButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel.LatestReleaseUri is Uri releaseUri)
+        {
+            await Launcher.LaunchUriAsync(releaseUri);
+            return;
+        }
+
+        await ViewModel.CheckForUpdatesAsync();
     }
 }

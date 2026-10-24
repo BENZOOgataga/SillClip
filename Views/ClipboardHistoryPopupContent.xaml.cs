@@ -25,6 +25,15 @@ internal sealed partial class ClipboardHistoryPopupContent : SillPopupContent
 
     internal string ClearHistoryTooltip { get; } = "/WindowSill.ClipboardHistory/Misc/ClearHistory".GetLocalizedString();
 
+    internal string SearchPlaceholder { get; } = "/WindowSill.ClipboardHistory/Misc/SearchPlaceholder".GetLocalizedString();
+
+    internal string NoSearchResultsText { get; } = "/WindowSill.ClipboardHistory/Misc/NoSearchResults".GetLocalizedString();
+
+    private void ClipboardHistoryPopupContent_Loaded(object sender, RoutedEventArgs e)
+    {
+        SearchBox.Focus(FocusState.Programmatic);
+    }
+
     private void ClipboardItemsShortcutListView_ItemClick(object sender, ItemClickEventArgs e)
     {
         if (e.ClickedItem is ClipboardHistoryItemViewModelBase viewModel)

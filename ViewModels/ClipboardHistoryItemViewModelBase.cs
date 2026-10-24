@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using Windows.ApplicationModel.DataTransfer;
+using Windows.Storage;
 using Windows.System;
 using WindowSill.API;
 using WindowSill.ClipboardHistory.Core;
@@ -19,6 +20,7 @@ public abstract partial class ClipboardHistoryItemViewModelBase
     private readonly IClipboardItemSource _source;
 
     private PinnedClipboardService? _pinnedService;
+    private PersistentClipboardService? _persistentService;
     private ClipboardItemData? _itemData;
 
     internal ClipboardHistoryItemViewModelBase(
@@ -32,9 +34,13 @@ public abstract partial class ClipboardHistoryItemViewModelBase
         _processInteractionService = processInteractionService;
         _source = source;
         Data = source.Data;
+        InitializeSearchTextAsync().Forget();
     }
 
     public DataPackageView Data { get; }
+
+    [ObservableProperty]
+    public partial string SearchText { get; private set; } = string.Empty;
 
     /// <summary>
     /// Gets whether the item this view model represents is pinned.
@@ -60,6 +66,12 @@ public abstract partial class ClipboardHistoryItemViewModelBase
         _pinnedService = pinnedService;
         OnPropertyChanged(nameof(CanPin));
         OnPropertyChanged(nameof(CanTogglePin));
+    }
+
+    internal void ConfigurePersistence(ClipboardItemData itemData, PersistentClipboardService persistentService)
+    {
+        _itemData = itemData;
+        _persistentService = persistentService;
     }
 
     /// <summary>
@@ -109,6 +121,38 @@ public abstract partial class ClipboardHistoryItemViewModelBase
         return _source.Id.GetHashCode();
     }
 
+    private async Task InitializeSearchTextAsync()
+    {
+        try
+        {
+            var parts = new List<string> { DetectedDataType.ToString() };
+
+            if (Data.AvailableFormats.Contains(StandardDataFormats.Text))
+            {
+                parts.Add(await Data.GetTextAsync());
+            }
+
+            if (Data.AvailableFormats.Contains(StandardDataFormats.WebLink))
+            {
+                parts.Add((await Data.GetWebLinkAsync()).ToString());
+            }
+
+            if (Data.AvailableFormats.Contains(StandardDataFormats.StorageItems))
+            {
+                IReadOnlyList<IStorageItem> storageItems = await Data.GetStorageItemsAsync();
+                parts.AddRange(storageItems.Select(item => item.Name));
+                parts.AddRange(storageItems.Select(item => item.Path));
+            }
+
+            SearchText = string.Join('\n', parts.Where(part => !string.IsNullOrWhiteSpace(part)));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Failed to build the search index for clipboard item {ItemId}.", _source.Id);
+            SearchText = DetectedDataType.ToString();
+        }
+    }
+
     [RelayCommand]
     private async Task PasteAsync()
     {
@@ -148,6 +192,11 @@ public abstract partial class ClipboardHistoryItemViewModelBase
         {
             _source.DeleteFromHistory();
         });
+
+        if (_persistentService is not null && _itemData is not null)
+        {
+            await _persistentService.DeleteBySignatureAsync(_itemData.ContentSignature);
+        }
     }
 
     [RelayCommand]
@@ -157,6 +206,11 @@ public abstract partial class ClipboardHistoryItemViewModelBase
         {
             Clipboard.ClearHistory();
         });
+
+        if (_persistentService is not null)
+        {
+            await _persistentService.ClearAsync();
+        }
     }
 
     [RelayCommand]

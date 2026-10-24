@@ -130,7 +130,7 @@
     <value>Hide passwords</value>
   </data>
   <data name="MaxItemNumber.DescriptionProperty" xml:space="preserve">
-    <value>How many items should be kept in the clipboard history</value>
+    <value>Use 0 or -1 for no item limit</value>
   </data>
   <data name="MaxItemNumber.HeaderProperty" xml:space="preserve">
     <value>Maximum number of items</value>
@@ -143,5 +143,20 @@
   </data>
   <data name="CompactMode.DescriptionProperty" xml:space="preserve">
     <value>Display all clipboard items in a single popup instead of individual items in the bar</value>
+  </data>
+  <data name="PersistentHistory.HeaderProperty" xml:space="preserve">
+    <value>Persistent history</value>
+  </data>
+  <data name="PersistentHistory.DescriptionProperty" xml:space="preserve">
+    <value>Keep an encrypted history across Windows and WindowSill restarts</value>
+  </data>
+  <data name="OverrideWindowsV.HeaderProperty" xml:space="preserve">
+    <value>Open this history with Win+V</value>
+  </data>
+  <data name="OverrideWindowsV.DescriptionProperty" xml:space="preserve">
+    <value>Replace the Windows clipboard panel while this extension is active</value>
+  </data>
+  <data name="Updates.HeaderProperty" xml:space="preserve">
+    <value>Extension updates</value>
   </data>
 </root>

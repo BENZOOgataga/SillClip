@@ -77,8 +77,7 @@ internal sealed class ClipboardHistoryDataService
     /// Triggers a refresh of the clipboard history data.
     /// Data types are computed on a background thread, then <see cref="DataUpdated"/> is raised.
     /// </summary>
-    /// <param name="maxItems">Maximum number of items to retrieve.</param>
-    public async Task RefreshAsync(int maxItems)
+    public async Task RefreshAsync()
     {
         await Task.Run(async () =>
         {
@@ -86,7 +85,7 @@ internal sealed class ClipboardHistoryDataService
 
             using (await _semaphore.WaitAsync(CancellationToken.None).ConfigureAwait(false))
             {
-                IReadOnlyList<ClipboardHistoryItem> clipboardItems = await GetClipboardHistoryItemsAsync(maxItems);
+                IReadOnlyList<ClipboardHistoryItem> clipboardItems = await GetClipboardHistoryItemsAsync();
 
                 // Compute data types and signatures on background thread
                 var itemDataList = new List<ClipboardItemData>(clipboardItems.Count);
@@ -168,7 +167,7 @@ internal sealed class ClipboardHistoryDataService
         }
     }
 
-    private async Task<IReadOnlyList<ClipboardHistoryItem>> GetClipboardHistoryItemsAsync(int maxItems)
+    private async Task<IReadOnlyList<ClipboardHistoryItem>> GetClipboardHistoryItemsAsync()
     {
         try
         {
@@ -177,11 +176,7 @@ internal sealed class ClipboardHistoryDataService
                 ClipboardHistoryItemsResult clipboardHistory = await Clipboard.GetHistoryItemsAsync();
                 if (clipboardHistory.Status == ClipboardHistoryItemsResultStatus.Success)
                 {
-                    // A non-positive value means "no WindowSill-side limit". In that
-                    // mode, return every item exposed by the Windows clipboard API.
-                    return maxItems <= 0
-                        ? clipboardHistory.Items.ToList()
-                        : clipboardHistory.Items.Take(maxItems).ToList();
+                    return clipboardHistory.Items.ToList();
                 }
             }
         }
@@ -195,19 +190,19 @@ internal sealed class ClipboardHistoryDataService
 
     private void Clipboard_HistoryEnabledChanged(object? sender, object e)
     {
-        // Subscribers will call RefreshAsync with their own maxItems setting
+        // Subscribers will refresh the shared cache.
         DataUpdated?.Invoke(this, EventArgs.Empty);
     }
 
     private void Clipboard_HistoryChanged(object? sender, ClipboardHistoryChangedEventArgs e)
     {
-        // Subscribers will call RefreshAsync with their own maxItems setting
+        // Subscribers will refresh the shared cache.
         DataUpdated?.Invoke(this, EventArgs.Empty);
     }
 
     private void Clipboard_ContentChanged(object? sender, object e)
     {
-        // Subscribers will call RefreshAsync with their own maxItems setting
+        // Subscribers will refresh the shared cache.
         DataUpdated?.Invoke(this, EventArgs.Empty);
     }
 }

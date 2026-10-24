@@ -16,7 +16,6 @@ namespace WindowSill.ClipboardHistory.Core;
 /// </summary>
 internal sealed class PinnedClipboardStore
 {
-    private const string FolderName = "Pinned";
     private const string DataExtension = ".dat";
     private const string ImageExtension = ".img";
 
@@ -24,9 +23,9 @@ internal sealed class PinnedClipboardStore
     private readonly DisposableSemaphore _semaphore = new();
 
     /// <param name="pluginDataFolder">The plugin's writable data folder.</param>
-    internal PinnedClipboardStore(string pluginDataFolder)
+    internal PinnedClipboardStore(string pluginDataFolder, string folderName = "Pinned")
     {
-        _dataFolder = Path.Combine(pluginDataFolder, FolderName);
+        _dataFolder = Path.Combine(pluginDataFolder, folderName);
         Directory.CreateDirectory(_dataFolder);
     }
 
@@ -81,6 +80,19 @@ internal sealed class PinnedClipboardStore
             {
                 File.Delete(path);
             }
+        }
+    }
+
+    /// <summary>
+    /// Deletes every item in this store.
+    /// </summary>
+    internal async Task DeleteAllAsync(CancellationToken cancellationToken = default)
+    {
+        using IDisposable _ = await _semaphore.WaitAsync(cancellationToken);
+
+        foreach (string path in Directory.GetFiles(_dataFolder))
+        {
+            File.Delete(path);
         }
     }
 

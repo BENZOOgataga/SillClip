@@ -1,27 +1,26 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <PackageId>WindowSill.ClipboardHistory</PackageId>
-        <Version>0.9.27-unlimited.1</Version>
-        <Authors>Etienne Baudoux</Authors>
-        <Title>Clipboard History</Title>
+        <Version>0.10.0-unlimited.1</Version>
+        <Authors>Etienne Baudoux, BENZOOgataga</Authors>
+        <Title>Clipboard History No Limits</Title>
         <Description>
           Never lose what you've copied again. Access your clipboard history instantly and paste any previous item with a single click or keyboard shortcut.
 
           Key features:
-          • Tracks text, images, URIs, colors &amp; files
-          • Pin important items, kept across restarts
-          • Automatically hides passwords for privacy
-          • Paste text and images directly in File Explorer
-          • Delete or clear individual items on demand
-          • Multi-monitor support for seamless workflows
-          • Configurable history limit to stay in control
+          Tracks text, images, URIs, colors and files.
+          Searches large histories from a dedicated popup.
+          Keeps an encrypted history across restarts.
+          Supports unlimited, 500, 1000 or custom retention limits.
+          Opens the searchable history with Win+V.
+          Checks GitHub Releases for extension updates.
 
           Your clipboard, supercharged.
         </Description>
         <PackageIcon>Assets/package.png</PackageIcon>
         <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
-        <PackageProjectUrl>https://getwindowsill.app</PackageProjectUrl>
-      <RepositoryUrl>https://github.com/WindowSill-app/Extensions</RepositoryUrl>
+        <PackageProjectUrl>https://github.com/BENZOOgataga/WindowSill-NoClipBoardHistoryLimit</PackageProjectUrl>
+      <RepositoryUrl>https://github.com/BENZOOgataga/WindowSill-NoClipBoardHistoryLimit</RepositoryUrl>
     </PropertyGroup>
     <ItemGroup>
         <None Include="Assets/package.png" Pack="true" PackagePath="\Assets\" />

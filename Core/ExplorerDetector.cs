@@ -30,7 +30,7 @@ internal static class ExplorerDetector
     /// <summary>
     /// Starts tracking foreground window changes. Call when the extension activates.
     /// Must be called so the hook is registered on the UI thread (which has a message pump).
-    /// Reference-counted — safe to call multiple times.
+    /// Reference-counted and safe to call multiple times.
     /// </summary>
     internal static async ValueTask StartTrackingAsync()
     {

@@ -8,7 +8,7 @@ internal static class Settings
     /// The maximum amount of items
     /// </summary>
     internal static readonly SettingDefinition<int> MaximumHistoryCount
-        = new(25, typeof(Settings).Assembly);
+        = new(0, typeof(Settings).Assembly);
 
     /// <summary>
     /// Whether passwords should be hidden
@@ -21,4 +21,16 @@ internal static class Settings
     /// </summary>
     internal static readonly SettingDefinition<bool> CompactMode
         = new(false, typeof(Settings).Assembly);
+
+    /// <summary>
+    /// Whether clipboard items should survive Windows history eviction and restarts.
+    /// </summary>
+    internal static readonly SettingDefinition<bool> PersistentHistory
+        = new(true, typeof(Settings).Assembly);
+
+    /// <summary>
+    /// Whether Win+V should open this extension instead of the Windows clipboard panel.
+    /// </summary>
+    internal static readonly SettingDefinition<bool> OverrideWindowsV
+        = new(true, typeof(Settings).Assembly);
 }

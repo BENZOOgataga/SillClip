@@ -156,4 +156,34 @@
   <data name="ClipboardFileBaseName" xml:space="preserve">
     <value>Clipboard</value>
   </data>
+  <data name="SearchPlaceholder" xml:space="preserve">
+    <value>Rechercher dans l'historique</value>
+  </data>
+  <data name="NoSearchResults" xml:space="preserve">
+    <value>Aucun element correspondant</value>
+  </data>
+  <data name="SearchHistory" xml:space="preserve">
+    <value>Rechercher dans l'historique du presse-papiers</value>
+  </data>
+  <data name="UpdateChecking" xml:space="preserve">
+    <value>Verification des releases GitHub...</value>
+  </data>
+  <data name="UpdateFailed" xml:space="preserve">
+    <value>La verification des releases GitHub a echoue.</value>
+  </data>
+  <data name="UpdateAvailable" xml:space="preserve">
+    <value>La version {0} est disponible.</value>
+  </data>
+  <data name="UpdateCurrent" xml:space="preserve">
+    <value>Version actuelle : {0}. Les mises a jour sont verifiees automatiquement.</value>
+  </data>
+  <data name="UpdateNoRelease" xml:space="preserve">
+    <value>Aucune release GitHub n'a encore ete publiee.</value>
+  </data>
+  <data name="OpenRelease" xml:space="preserve">
+    <value>Ouvrir la release</value>
+  </data>
+  <data name="CheckNow" xml:space="preserve">
+    <value>Verifier maintenant</value>
+  </data>
 </root>

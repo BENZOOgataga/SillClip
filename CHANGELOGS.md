@@ -1,3 +1,11 @@
+# 0.10.0-unlimited.1
+- Added DPAPI-encrypted persistent clipboard history.
+- Added live search in compact mode and a search popup in expanded mode.
+- Added automatic update checks through GitHub Releases.
+- Added an optional Win+V override that opens the searchable WindowSill popup.
+- Changed `0` and `-1` to mean no extension-side item limit.
+- Kept pinned items outside the retention limit.
+
 # 0.9.26
 - You can now pin clipboard items. Pinned items stay at the top and are kept across restarts, even after Windows clears its clipboard history.
 - Fixed a crash happening when a tooltip contains a large text.

@@ -12,6 +12,7 @@
     MinWidth="380"
     MinHeight="100"
     MaxHeight="600"
+    Loaded="ClipboardHistoryPopupContent_Loaded"
     mc:Ignorable="d">
 
     <api:SillPopupContent.Resources>
@@ -479,6 +480,7 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
@@ -506,9 +508,21 @@
             </Button>
         </Grid>
 
+        <AutoSuggestBox
+            x:Name="SearchBox"
+            Grid.Row="1"
+            Margin="12,0,12,8"
+            AutomationProperties.Name="{x:Bind SearchPlaceholder}"
+            PlaceholderText="{x:Bind SearchPlaceholder}"
+            Text="{x:Bind ViewModel.SearchQuery, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+            <AutoSuggestBox.QueryIcon>
+                <SymbolIcon Symbol="Find" />
+            </AutoSuggestBox.QueryIcon>
+        </AutoSuggestBox>
+
         <!--  Clipboard items list  -->
         <TextBlock
-            Grid.Row="1"
+            Grid.Row="2"
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
             api:Uids.Uid="/WindowSill.ClipboardHistory/Misc/EmptyClipboard"
@@ -517,8 +531,18 @@
             TextAlignment="Center"
             TextWrapping="WrapWholeWords"
             Visibility="{x:Bind ViewModel.EmptyClipboardIndicatorVisibility, Mode=OneWay}" />
+        <TextBlock
+            Grid.Row="2"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+            Style="{ThemeResource CaptionTextBlockStyle}"
+            Text="{x:Bind NoSearchResultsText}"
+            TextAlignment="Center"
+            TextWrapping="WrapWholeWords"
+            Visibility="{x:Bind ViewModel.NoSearchResultsVisibility, Mode=OneWay}" />
         <ui:ShortcutListView
-            Grid.Row="1"
+            Grid.Row="2"
             Padding="4"
             HorizontalAlignment="Stretch"
             HorizontalContentAlignment="Stretch"
