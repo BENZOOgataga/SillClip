@@ -64,16 +64,16 @@ Requirements:
 - Windows 11
 - .NET 10 SDK
 - WindowSill
-- Visual Studio or Visual Studio Build Tools with the `WinUI application development` workload
+- Windows SDK build tools (restored with the project dependencies)
 
 ```powershell
 dotnet restore
 .\scripts\Build-Extension.ps1
 ```
 
-The script runs `dotnet pack -c Release`, copies the generated `.nupkg` to `artifacts/`, and changes its extension to `.wsext`. Double-click the resulting `.wsext` file to install it.
+The script builds the extension, packs it, copies the generated `.nupkg` to `artifacts/`, and changes its extension to `.wsext`. Double-click the resulting `.wsext` file to install it.
 
-The required Visual Studio packaging components are important. A plain .NET SDK installation can compile most C# code but cannot generate the `.pri` resource file required by a WindowSill package. For Build Tools, install workload ID `Microsoft.VisualStudio.Workload.UniversalBuildTools` and include its recommended Windows 11 SDK. Microsoft lists the workload and its components in the [Visual Studio Build Tools documentation](https://learn.microsoft.com/visualstudio/install/workload-component-id-vs-build-tools?view=vs-2026).
+The project restores Microsoft's MSIX build tools through NuGet to generate the required `.pri` resources. The build does not require a full Visual Studio installation.
 
 To debug the extension:
 

@@ -33,4 +33,7 @@ internal static class Settings
     /// </summary>
     internal static readonly SettingDefinition<bool> OverrideWindowsV
         = new(true, typeof(Settings).Assembly);
+
+    internal static readonly SettingDefinition<bool> UnlimitedDefaultsApplied
+        = new(false, typeof(Settings).Assembly);
 }

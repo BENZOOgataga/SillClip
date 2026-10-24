@@ -41,6 +41,8 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
     private SillListViewPopupItem? _popupAnchor;
     private ClipboardHistoryPopupContent? _popupContent;
     private SillPopup? _shortcutPopup;
+    private ClipboardHistoryPopupContent? _shortcutContent;
+    private bool _shortcutPopupOpen;
 
     [ImportingConstructor]
     internal ClipboardHistorySill(
@@ -103,6 +105,17 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
 
     public async ValueTask OnActivatedAsync()
     {
+        if (!_settingsProvider.GetSetting(Settings.Settings.UnlimitedDefaultsApplied))
+        {
+            if (_settingsProvider.GetSetting(Settings.Settings.MaximumHistoryCount) == 25)
+            {
+                _settingsProvider.SetSetting(Settings.Settings.MaximumHistoryCount, 0);
+            }
+            _settingsProvider.SetSetting(Settings.Settings.UnlimitedDefaultsApplied, true);
+        }
+
+        _logger.LogInformation("Clipboard retention limit: {MaximumItemCount} (0 or -1 means unlimited).",
+            _settingsProvider.GetSetting(Settings.Settings.MaximumHistoryCount));
         _settingsProvider.SettingChanged += SettingsProvider_SettingChanged;
         _clipboardDataService.DataUpdated += ClipboardDataService_DataUpdated;
         _pinnedService.PinsChanged += PinnedService_PinsChanged;
@@ -117,13 +130,14 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
         }
         await RefreshClipboardDataAsync();
         _winVShortcutService.ShortcutPressed += WinVShortcutService_ShortcutPressed;
-        ConfigureWinVShortcut();
+        await ThreadHelper.RunOnUIThreadAsync(ConfigureWinVShortcut);
         _updateService.CheckAsync().Forget();
     }
 
     public ValueTask OnDeactivatedAsync()
     {
         _popupContent?.Close();
+        _shortcutContent?.Close();
         ExplorerDetector.StopTracking();
         _settingsProvider.SettingChanged -= SettingsProvider_SettingChanged;
         _clipboardDataService.DataUpdated -= ClipboardDataService_DataUpdated;
@@ -137,6 +151,7 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
         _popupAnchor = null;
         _popupContent = null;
         _shortcutPopup = null;
+        _shortcutContent = null;
         return ValueTask.CompletedTask;
     }
 
@@ -164,6 +179,7 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
         }
         else if (args.SettingName == Settings.Settings.HidePasswords.Name)
         {
+            ResetShortcutPopup();
             ViewList.Clear();
             _popupViewModel = null;
             _clipboardDataService.ClearCache();
@@ -171,6 +187,7 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
         }
         else if (args.SettingName == Settings.Settings.CompactMode.Name)
         {
+            ResetShortcutPopup();
             ViewList.Clear();
             _popupViewModel = null;
             _searchItem = null;
@@ -400,6 +417,10 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
             {
                 _logger.LogWarning("Win+V could not be overridden. The Windows clipboard shortcut remains active.");
             }
+            else
+            {
+                _logger.LogInformation("Win+V clipboard shortcut is active.");
+            }
         }
         else
         {
@@ -414,26 +435,27 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
 
     private async Task ShowSearchPopupAsync()
     {
-        if (_shortcutPopup is not null)
+        if (_shortcutPopupOpen)
         {
             return;
         }
 
-        await RefreshClipboardDataAsync();
-
-        if (_popupAnchor is null || _popupContent is null)
-        {
-            return;
-        }
-
-        _popupViewModel!.SearchQuery = string.Empty;
-        _shortcutPopup = new SillPopup
-        {
-            Content = _popupContent
-        };
-
+        _shortcutPopupOpen = true;
         try
         {
+            await RefreshClipboardDataAsync();
+            if (_popupAnchor is null || _popupViewModel is null)
+            {
+                return;
+            }
+
+            _popupViewModel.SearchQuery = string.Empty;
+            if (_shortcutPopup is null)
+            {
+                _shortcutContent = new ClipboardHistoryPopupContent(_popupViewModel);
+                _shortcutPopup = new SillPopup { Content = _shortcutContent };
+            }
+
             await _shortcutPopup.ShowAsync(_popupAnchor);
         }
         catch (InvalidOperationException ex)
@@ -442,8 +464,15 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
         }
         finally
         {
-            _shortcutPopup = null;
+            _shortcutPopupOpen = false;
         }
+    }
+
+    private void ResetShortcutPopup()
+    {
+        _shortcutContent?.Close();
+        _shortcutPopup = null;
+        _shortcutContent = null;
     }
 
     [RelayCommand]

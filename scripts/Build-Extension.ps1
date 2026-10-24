@@ -11,7 +11,12 @@ $projectPath = Join-Path $repositoryRoot "WindowSill.ClipboardHistory.csproj"
 $packageDirectory = Join-Path $repositoryRoot "bin\$Configuration"
 $outputDirectory = Join-Path $repositoryRoot "artifacts"
 
-dotnet pack $projectPath -c $Configuration
+dotnet build $projectPath -c $Configuration
+if ($LASTEXITCODE -ne 0) {
+    throw "dotnet build failed with exit code $LASTEXITCODE."
+}
+
+dotnet pack $projectPath -c $Configuration --no-build
 if ($LASTEXITCODE -ne 0) {
     throw "dotnet pack failed with exit code $LASTEXITCODE."
 }

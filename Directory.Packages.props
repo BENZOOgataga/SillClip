@@ -15,6 +15,7 @@
     <SyncfusionVersion>34.1.29</SyncfusionVersion>
   </PropertyGroup>
   <ItemGroup>
+    <PackageVersion Include="Microsoft.Windows.SDK.BuildTools.MSIX" Version="1.7.260930100" />
     <PackageVersion Include="Azure.Core" Version="1.53.0" />
     <PackageVersion Include="CommunityToolkit.WinUI.Controls.Primitives" Version="$(CommunityToolkitWinUIVersion)" />
     <PackageVersion Include="CommunityToolkit.WinUI.Controls.Sizers" Version="$(CommunityToolkitWinUIVersion)" />
