@@ -1,0 +1,49 @@
+# Build output
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+[Aa]rtifacts/
+[Tt]est[Rr]esults/
+
+# Visual Studio / Rider / VS Code user state
+.vs/
+.idea/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.rsuser
+
+# NuGet packages and locally produced packages
+packages/
+*.nupkg
+*.snupkg
+*.nuget.props
+*.nuget.targets
+
+# Generated binaries and diagnostics
+*.dll
+*.exe
+*.pdb
+*.cache
+*.log
+*.binlog
+*.xbf
+*.pri
+
+# OS metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+*.pfx
+*.p12
+*.cer
+*.key
+secrets.json

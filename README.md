@@ -1,25 +1,34 @@
-# Clipboard History Unlimited pour WindowSill
+# WindowSill Clipboard History — No Limit
 
-Fork fidèle de l’extension officielle **Clipboard History** de WindowSill. Toutes les fonctions d’origine sont conservées ; seule la limite du réglage **Maximum number of items** est modifiée.
+A minimal fork of WindowSill's official **Clipboard History** extension. All original features and UI are preserved; only the **Maximum number of items** setting has been changed.
 
-- `-1` ou `0` : aucune limite appliquée par WindowSill.
-- Valeur positive (`25`, `500`, `1000`, etc.) : nombre maximal demandé.
+- `-1` or `0`: WindowSill applies no item limit.
+- Any positive value (`25`, `500`, `1000`, and so on): requested maximum number of items.
 
-## Compiler
+## Build
 
-Prérequis : Windows 11, le SDK .NET 10, WindowSill et Visual Studio/Build Tools avec les composants **Universal** et **Windows App SDK C#**.
+Requirements:
+
+- Windows 11
+- .NET 10 SDK
+- WindowSill
+- Visual Studio or Visual Studio Build Tools with the **Universal** and **Windows App SDK C#** components
 
 ```powershell
 dotnet restore
 dotnet build -c Release
 ```
 
-La DLL et le paquet WindowSill (`.nupkg`) sont générés sous `bin/Release/`.
+The DLL and WindowSill package (`.nupkg`) are generated under `bin/Release/`.
 
-Une extension WindowSill ne s’installe pas comme une DLL nue : le `.nupkg` contient également les vues XAML et les ressources. Pour tester localement, ouvrez le projet dans Visual Studio, sélectionnez la plateforme **x64** et le profil **WindowSill Extension**, puis appuyez sur F5. Le profil transmet le paquet à WindowSill via `EXTRAPLUGIN`.
+A WindowSill extension should not be installed as a standalone DLL: the `.nupkg` also contains its compiled XAML views and resources. To test locally, open the project in Visual Studio, select the **x64** platform and the **WindowSill Extension** launch profile, then press F5. The profile passes the package to WindowSill through `EXTRAPLUGIN`.
 
-Le Sill conserve volontairement le même identifiant interne et le même `PackageId` que l’extension officielle afin de la remplacer. Désactivez ou désinstallez donc la version officielle avant de charger ce paquet.
+This fork deliberately keeps the same internal Sill name and `PackageId` as the official extension so that it can replace it. Disable or uninstall the official version before loading this package.
 
-## Limitation de Windows
+## Windows limitation
 
-Cette modification enlève la limite ajoutée par l’interface WindowSill. Elle ne peut pas obliger `Windows.ApplicationModel.DataTransfer.Clipboard.GetHistoryItemsAsync()` à retourner davantage d’éléments que Windows lui-même n’en conserve. Obtenir un historique réellement indépendant de plusieurs centaines d’éléments nécessiterait un second moteur de capture et de stockage, ce qui ne serait plus « exactement la même extension avec un seul réglage modifié ».
+This change removes the limit applied by WindowSill. It cannot force `Windows.ApplicationModel.DataTransfer.Clipboard.GetHistoryItemsAsync()` to return more entries than Windows itself retains. A truly independent history containing hundreds of entries would require a separate capture and storage engine, rather than this deliberately minimal fork.
+
+## Credits and license
+
+Based on the official [WindowSill Extensions](https://github.com/WindowSill-app/Extensions) repository. The original copyright and license are preserved in [LICENSE.md](LICENSE.md).
