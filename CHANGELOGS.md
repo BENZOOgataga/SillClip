@@ -1,4 +1,6 @@
 # 0.10.0-unlimited.1
+- Fixed Start opening when the Windows key is released after Win+V.
+- Fixed Escape closing the history when the search field has focus.
 - Added DPAPI-encrypted persistent clipboard history.
 - Added live search in compact mode and a search popup in expanded mode.
 - Added automatic update checks through GitHub Releases.

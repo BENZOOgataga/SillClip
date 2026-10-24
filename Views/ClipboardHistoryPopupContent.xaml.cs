@@ -1,4 +1,5 @@
-using Windows.ApplicationModel;
+using Microsoft.UI.Xaml.Input;
+using Windows.System;
 using WindowSill.API;
 using WindowSill.ClipboardHistory.ViewModels;
 
@@ -14,6 +15,7 @@ internal sealed partial class ClipboardHistoryPopupContent : SillPopupContent
     {
         ViewModel = viewModel;
         InitializeComponent();
+        AddHandler(KeyDownEvent, new KeyEventHandler(OnPopupKeyDown), handledEventsToo: true);
     }
 
     /// <summary>
@@ -32,6 +34,21 @@ internal sealed partial class ClipboardHistoryPopupContent : SillPopupContent
     private void ClipboardHistoryPopupContent_Loaded(object sender, RoutedEventArgs e)
     {
         SearchBox.Focus(FocusState.Programmatic);
+    }
+
+    public override void OnOpening()
+    {
+        base.OnOpening();
+        DispatcherQueue.TryEnqueue(() => SearchBox.Focus(FocusState.Programmatic));
+    }
+
+    private void OnPopupKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == VirtualKey.Escape)
+        {
+            e.Handled = true;
+            Close();
+        }
     }
 
     private void ClipboardItemsShortcutListView_ItemClick(object sender, ItemClickEventArgs e)

@@ -20,11 +20,15 @@ internal sealed class WinVShortcutService : IDisposable
     private const int VkMenu = 0x12;
     private const int VkLeftWindows = 0x5B;
     private const int VkRightWindows = 0x5C;
+    private const ushort DummyVirtualKey = 0xFF;
+    private const uint InputKeyboard = 1;
+    private const uint KeyEventKeyUp = 2;
 
     private readonly LowLevelKeyboardProc _hookCallback;
     private nint _hookHandle;
     private bool _vKeyDown;
     private bool _suppressVKeyUp;
+    private bool _openRequested;
 
     [ImportingConstructor]
     public WinVShortcutService()
@@ -57,6 +61,7 @@ internal sealed class WinVShortcutService : IDisposable
 
         _vKeyDown = false;
         _suppressVKeyUp = false;
+        _openRequested = false;
     }
 
     public void Dispose()
@@ -71,11 +76,28 @@ internal sealed class WinVShortcutService : IDisposable
             if (code >= 0)
             {
                 var keyboardData = Marshal.PtrToStructure<KeyboardData>(keyboardDataAddress);
+                uint keyboardMessage = unchecked((uint)message);
+                bool isKeyDown = keyboardMessage is WmKeyDown or WmSysKeyDown;
+                bool isKeyUp = keyboardMessage is WmKeyUp or WmSysKeyUp;
+
+                if (isKeyUp && _openRequested
+                    && keyboardData.VirtualKey is VkLeftWindows or VkRightWindows)
+                {
+                    int otherWindowsKey = keyboardData.VirtualKey == VkLeftWindows
+                        ? VkRightWindows : VkLeftWindows;
+                    if (!IsKeyDown(otherWindowsKey))
+                    {
+                        _openRequested = false;
+                        ShortcutPressed?.Invoke(this, EventArgs.Empty);
+                    }
+                }
+
                 if (keyboardData.VirtualKey == VkV)
                 {
-                    uint keyboardMessage = unchecked((uint)message);
-                    bool isKeyDown = keyboardMessage is WmKeyDown or WmSysKeyDown;
-                    bool isKeyUp = keyboardMessage is WmKeyUp or WmSysKeyUp;
+                    if (isKeyDown && _suppressVKeyUp)
+                    {
+                        return new nint(1);
+                    }
 
                     if (isKeyDown && IsWindowsKeyDown() && !IsAnotherModifierDown())
                     {
@@ -83,7 +105,10 @@ internal sealed class WinVShortcutService : IDisposable
                         if (!_vKeyDown)
                         {
                             _vKeyDown = true;
-                            ShortcutPressed?.Invoke(this, EventArgs.Empty);
+                            // Without this neutral chord, the Shell sees a bare Win press
+                            // and opens Start when Win is released. PowerToys uses 0xFF too.
+                            SendMenuMask();
+                            _openRequested = true;
                         }
 
                         return new nint(1);
@@ -118,6 +143,53 @@ internal sealed class WinVShortcutService : IDisposable
     private static bool IsKeyDown(int virtualKey)
         => (GetAsyncKeyState(virtualKey) & 0x8000) != 0;
 
+    private static void SendMenuMask()
+    {
+        NativeInput[] inputs =
+        [
+            new() { Type = InputKeyboard, Data = new InputData
+                { Keyboard = new KeyboardInput { VirtualKey = DummyVirtualKey } } },
+            new() { Type = InputKeyboard, Data = new InputData
+                { Keyboard = new KeyboardInput { VirtualKey = DummyVirtualKey, Flags = KeyEventKeyUp } } }
+        ];
+        SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<NativeInput>());
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeInput
+    {
+        internal uint Type;
+        internal InputData Data;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    private struct InputData
+    {
+        [FieldOffset(0)] internal KeyboardInput Keyboard;
+        [FieldOffset(0)] internal MouseInput Mouse;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct KeyboardInput
+    {
+        internal ushort VirtualKey;
+        internal ushort ScanCode;
+        internal uint Flags;
+        internal uint Time;
+        internal nuint ExtraInfo;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MouseInput
+    {
+        internal int X;
+        internal int Y;
+        internal uint MouseData;
+        internal uint Flags;
+        internal uint Time;
+        internal nuint ExtraInfo;
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     private readonly struct KeyboardData
     {
@@ -150,4 +222,7 @@ internal sealed class WinVShortcutService : IDisposable
 
     [DllImport("user32.dll")]
     private static extern short GetAsyncKeyState(int virtualKey);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern uint SendInput(uint count, NativeInput[] inputs, int size);
 }
