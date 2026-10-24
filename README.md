@@ -1,4 +1,4 @@
-# WindowSill Clipboard History — No Limit
+# WindowSill Clipboard History: No Limit
 
 This is a fork of WindowSill's official **Clipboard History** extension. The only functional change is the range accepted by **Maximum number of items**.
 
