@@ -48,6 +48,8 @@ The WindowSill SDK owns the popup window and its capture-protection registration
 
 The release has 61 passing regression tests, covering retention, version channels, clipboard signatures, privacy, refresh coalescing, shortcut state, popup navigation, and placement bounds.
 
+Release builds map source paths to `/_/`. The packaging script checks required resources, local build paths, diagnostic files, and common secret markers before accepting a package.
+
 A separate native probe exercised the production placement callback on 16 hidden-window cases: caret and fallback placement, 100%, 125%, 150%, and 200% scale, and moves with or without WM_WINDOWPOSCHANGING. It checked final position, dimensions, hidden state, and callback removal. No window was shown and no keyboard input was generated.
 
 Run it with `dotnet run --project tests/NativePlacementProbe -c Release` on Windows. It also runs in CI before packaging.

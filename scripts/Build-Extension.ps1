@@ -34,5 +34,6 @@ if ($null -eq $package) {
 New-Item -ItemType Directory -Path $outputDirectory -Force | Out-Null
 $extensionPath = Join-Path $outputDirectory ($package.BaseName + ".wsext")
 Copy-Item -LiteralPath $package.FullName -Destination $extensionPath -Force
+& (Join-Path $PSScriptRoot 'Test-ExtensionPackage.ps1') -Path $extensionPath
 
 Write-Host "WindowSill extension package: $extensionPath"

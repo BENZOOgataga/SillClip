@@ -9,6 +9,7 @@
     <LangVersion>preview</LangVersion>
     <Platforms>AnyCPU</Platforms>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <PathMap Condition="'$(Configuration)' == 'Release'">$(MSBuildThisFileDirectory)=/_/</PathMap>
     <DefaultItemExcludes>$(DefaultItemExcludes);artifacts\**;tests\**</DefaultItemExcludes>
 
     <!-- Enable Central Package Management -->

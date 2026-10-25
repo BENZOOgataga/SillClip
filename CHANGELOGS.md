@@ -6,6 +6,7 @@
 - Added multiline cards within the 360 by 400 logical pixel popup.
 - Guarded popup paste against changes to the target window and unavailable items.
 - Batched search-index refreshes.
+- Removed local build paths from release assembly debug metadata.
 - Included the image preview and keyboard hook fixes from 0.10.1-unlimited.2.
 - Published a stable package for GitHub update checks.
 
