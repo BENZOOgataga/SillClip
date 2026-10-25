@@ -43,7 +43,7 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
     private SillPopup? _shortcutPopup;
     private ClipboardHistoryPopupContent? _shortcutContent;
     private bool _shortcutPopupOpen;
-    private readonly SemaphoreSlim _refreshGate = new(1, 1);
+    private readonly CoalescingAsyncAction _refreshQueue;
     private CancellationTokenSource? _activation;
 
     [ImportingConstructor]
@@ -58,6 +58,7 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
         WinVShortcutService winVShortcutService)
     {
         _logger = this.Log();
+        _refreshQueue = new CoalescingAsyncAction(ex => _logger.LogWarning(ex, "Clipboard refresh failed. The next clipboard change will retry."));
         _pluginInfo = pluginInfo;
         _settingsProvider = settingsProvider;
         _clipboardDataService = clipboardDataService;
@@ -137,13 +138,14 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
         catch (Exception ex) { _logger.LogWarning(ex, "Persistent history could not be loaded. Live clipboard remains available."); }
         await RefreshClipboardDataAsync();
         _winVShortcutService.ShortcutPressed += WinVShortcutService_ShortcutPressed;
-        await ThreadHelper.RunOnUIThreadAsync(ConfigureWinVShortcut);
+        await ConfigureWinVShortcutAsync();
         _updateService.Start();
     }
 
-    public ValueTask OnDeactivatedAsync()
+    public async ValueTask OnDeactivatedAsync()
     {
         _activation?.Cancel();
+        _refreshQueue.CancelPending();
         _popupContent?.Close();
         _shortcutContent?.Close();
         ExplorerDetector.StopTracking();
@@ -153,7 +155,7 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
         _persistentService.HistoryChanged -= PersistentService_HistoryChanged;
         _clipboardDataService.Unsubscribe();
         _winVShortcutService.ShortcutPressed -= WinVShortcutService_ShortcutPressed;
-        _winVShortcutService.Stop();
+        await _winVShortcutService.StopAsync();
         _updateService.Stop();
         _popupViewModel?.Dispose();
         _popupViewModel = null;
@@ -162,7 +164,6 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
         _popupContent = null;
         _shortcutPopup = null;
         _shortcutContent = null;
-        return ValueTask.CompletedTask;
     }
 
     private void PersistentService_HistoryChanged(object? sender, EventArgs e)
@@ -180,11 +181,6 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
         if (args.SettingName == Settings.Settings.MaximumHistoryCount.Name
             || args.SettingName == Settings.Settings.PersistentHistory.Name)
         {
-            if (args.SettingName == Settings.Settings.PersistentHistory.Name
-                && _settingsProvider.GetSetting(Settings.Settings.PersistentHistory))
-            {
-                _persistentService.LoadAsync().Forget();
-            }
             RefreshClipboardDataAsync().Forget();
         }
         else if (args.SettingName == Settings.Settings.HidePasswords.Name)
@@ -208,7 +204,7 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
         }
         else if (args.SettingName == Settings.Settings.OverrideWindowsV.Name)
         {
-            ConfigureWinVShortcut();
+            ConfigureWinVShortcutAsync().Forget();
         }
     }
 
@@ -217,13 +213,15 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
         RefreshClipboardDataAsync().Forget();
     }
 
-    private async Task RefreshClipboardDataAsync()
+    private Task RefreshClipboardDataAsync()
     {
         CancellationToken token = _activation?.Token ?? new CancellationToken(true);
-        if (token.IsCancellationRequested) return;
-        await _refreshGate.WaitAsync();
-        try
-        {
+        return token.IsCancellationRequested ? Task.CompletedTask
+            : _refreshQueue.RequestAsync(() => RefreshClipboardDataCoreAsync(token));
+    }
+
+    private async Task RefreshClipboardDataCoreAsync(CancellationToken token)
+    {
         if (token.IsCancellationRequested) return;
         int maxItems = _settingsProvider.GetSetting(Settings.Settings.MaximumHistoryCount);
         await _clipboardDataService.RefreshAsync();
@@ -232,14 +230,14 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
         {
             try
             {
-            await _persistentService.LoadAsync(token);
-            var pinnedSignatures = new HashSet<string>(
-                _pinnedService.GetPinnedItems().Select(item => item.ContentSignature),
-                StringComparer.Ordinal);
-            await _persistentService.CaptureAsync(
-                _clipboardDataService.GetCachedItems(),
-                maxItems,
-                pinnedSignatures, token);
+                await _persistentService.LoadAsync(token);
+                var pinnedSignatures = new HashSet<string>(
+                    _pinnedService.GetPinnedItems().Select(item => item.ContentSignature),
+                    StringComparer.Ordinal);
+                await _persistentService.CaptureAsync(
+                    _clipboardDataService.GetCachedItems(),
+                    maxItems,
+                    pinnedSignatures, token);
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested) { return; }
             catch (Exception ex) { _logger.LogWarning(ex, "Persistent history is unavailable. Live clipboard history remains accessible."); }
@@ -248,14 +246,12 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
         if (token.IsCancellationRequested) return;
         if (IsCompactMode)
         {
-            await UpdatePopupViewModelAsync();
+            await UpdatePopupViewModelAsync(token);
         }
         else
         {
-            await UpdateViewListAsync();
+            await UpdateViewListAsync(token);
         }
-        }
-        finally { _refreshGate.Release(); }
     }
 
     /// <summary>
@@ -293,12 +289,13 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
     /// Updates the popup ViewModel's items collection for compact mode.
     /// Creates the popup SillListViewPopupItem on first call.
     /// </summary>
-    private async Task UpdatePopupViewModelAsync()
+    private async Task UpdatePopupViewModelAsync(CancellationToken token)
     {
         IReadOnlyList<ClipboardItemData> cachedItems = GetCombinedItems();
 
         await ThreadHelper.RunOnUIThreadAsync(() =>
         {
+            if (token.IsCancellationRequested) return;
             if (_popupViewModel is null)
             {
                 _popupViewModel = new ClipboardHistoryPopupViewModel(_persistentService);
@@ -339,13 +336,14 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
     /// <summary>
     /// Updates the ViewList with individual SillListViewButtonItems for normal (expanded) mode.
     /// </summary>
-    private async Task UpdateViewListAsync()
+    private async Task UpdateViewListAsync(CancellationToken token)
     {
         IReadOnlyList<ClipboardItemData> cachedItems = GetCombinedItems();
         IReadOnlyList<ClipboardItemData> barItems = [.. cachedItems.Take(ExpandedBarItemLimit)];
 
         await ThreadHelper.RunOnUIThreadAsync(() =>
         {
+            if (token.IsCancellationRequested) return;
             if (_popupViewModel is null)
             {
                 _popupViewModel = new ClipboardHistoryPopupViewModel(_persistentService);
@@ -379,23 +377,15 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
                     });
             }
 
-            ViewList.Remove(_iconItem);
-            if (_searchItem is not null)
+            var desired = new List<SillListViewItem>();
+            if (_searchItem is not null) desired.Add(_searchItem);
+            if (barItems.Count > 0) desired.Add(_iconItem);
+            foreach (var itemData in barItems)
             {
-                ViewList.Remove(_searchItem);
-            }
-
-            ViewList.SynchronizeWith(
-                barItems,
-                (oldItem, newItem) =>
-                {
-                    if (oldItem.DataContext is ClipboardHistoryItemViewModelBase oldItemViewModel)
-                    {
-                        return oldItemViewModel.Equals(newItem.Source);
-                    }
-                    throw new Exception($"Unexpected item type in ViewList: {oldItem.DataContext?.GetType().FullName ?? "null"}");
-                },
-                (itemData) =>
+                var existing = ViewList.FirstOrDefault(item => item.DataContext is ClipboardHistoryItemViewModelBase vm
+                    && vm.Equals(itemData.Source));
+                if (existing is not null) desired.Add(existing);
+                else
                 {
                     ClipboardHistoryItemViewModelBase viewModel;
                     SillListViewItem view;
@@ -417,13 +407,11 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
                         DecorateAsPinned(view);
                     }
 
-                    return view;
-                });
-
-            if (_searchItem is not null)
-            {
-                ViewList.Insert(0, _searchItem);
+                    desired.Add(view);
+                }
             }
+            // Retain existing controls and anchors instead of detaching them on every copy.
+            CollectionReconciler.Update(ViewList, desired);
 
             _popupViewModel.AllItems.SynchronizeWith(
                 cachedItems,
@@ -431,18 +419,14 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
                 itemData => _viewFactory.CreateViewModel(itemData));
             _popupViewModel.RefreshFilter();
 
-            if (barItems.Count > 0)
-            {
-                ViewList.Insert(_searchItem is null ? 0 : 1, _iconItem);
-            }
         });
     }
 
-    private void ConfigureWinVShortcut()
+    private async Task ConfigureWinVShortcutAsync()
     {
         if (_settingsProvider.GetSetting(Settings.Settings.OverrideWindowsV))
         {
-            if (!_winVShortcutService.Start())
+            if (!await _winVShortcutService.StartAsync())
             {
                 _logger.LogWarning("Win+V could not be overridden. The Windows clipboard shortcut remains active.");
             }
@@ -453,7 +437,7 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
         }
         else
         {
-            _winVShortcutService.Stop();
+            await _winVShortcutService.StopAsync();
         }
     }
 

@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 using Windows.ApplicationModel.DataTransfer;
 using WindowSill.API;
 using WindowSill.ClipboardHistory.Services;
+using WindowSill.ClipboardHistory.Core;
 
 namespace WindowSill.ClipboardHistory.ViewModels;
 
@@ -68,10 +69,7 @@ internal sealed partial class ClipboardHistoryPopupViewModel : ObservableObject,
             : AllItems.Where(item => terms.All(term =>
                 item.SearchText.Contains(term, StringComparison.CurrentCultureIgnoreCase)));
 
-        Items.SynchronizeWith(
-            matchingItems.ToArray(),
-            (existing, updated) => existing.Equals(updated),
-            updated => updated);
+        CollectionReconciler.Update(Items, matchingItems.ToArray());
 
         OnPropertyChanged(nameof(EmptyClipboardIndicatorVisibility));
         OnPropertyChanged(nameof(NoSearchResultsVisibility));

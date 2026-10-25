@@ -44,16 +44,21 @@ internal sealed partial class ImageItemViewModel : ClipboardHistoryItemViewModel
     private int _previewVersion;
     public BitmapImage? Image
     {
-        get
-        {
-            if (_image is null && !_loading)
-            {
-                _loading = true;
-                InitializeAsync(_previewVersion).Forget();
-            }
-            return _image;
-        }
+        get => _image;
         private set => SetProperty(ref _image, value);
+    }
+
+    internal void RequestPreview()
+    {
+        if (_image is not null || _loading) return;
+        _loading = true;
+        int version = _previewVersion;
+        // Binding getters run inside MeasureOverride. Start external work only after layout returns.
+        Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread().TryEnqueue(
+            Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+            {
+                if (version == _previewVersion) InitializeAsync(version).Forget();
+            });
     }
 
     internal void ReleasePreview()
@@ -67,7 +72,6 @@ internal sealed partial class ImageItemViewModel : ClipboardHistoryItemViewModel
     {
         try
         {
-            Guard.IsNotNull(Data);
             var (bitmap, width, height) = await DataHelper.GetBitmapAsync(Data);
             if (version != _previewVersion) return;
             Image = bitmap;

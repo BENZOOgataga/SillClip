@@ -17,20 +17,33 @@ internal static partial class DataHelper
         await BitmapGate.WaitAsync();
         try
         {
-            RandomAccessStreamReference randomAccessStreamReference = await dataPackageView.GetBitmapAsync();
-            using IRandomAccessStreamWithContentType randomAccessStreamWithContentType = await randomAccessStreamReference.OpenReadAsync();
-            var decoder = await BitmapDecoder.CreateAsync(randomAccessStreamWithContentType);
-            uint width = decoder.PixelWidth;
-            uint height = decoder.PixelHeight;
-            double scale = Math.Min(1, 256.0 / Math.Max(width, height));
-            randomAccessStreamWithContentType.Seek(0);
-            var bitmap = new BitmapImage
+            // Clipboard providers can pump messages or block. Read and decode them off the XAML thread.
+            var (thumbnail, width, height) = await Task.Run(async () =>
             {
-                DecodePixelType = DecodePixelType.Physical,
-                DecodePixelWidth = Math.Max(1, (int)(width * scale)),
-                DecodePixelHeight = Math.Max(1, (int)(height * scale))
-            };
-            await bitmap.SetSourceAsync(randomAccessStreamWithContentType);
+                var reference = await dataPackageView.GetBitmapAsync();
+                using var source = await reference.OpenReadAsync();
+                var decoder = await BitmapDecoder.CreateAsync(source);
+                uint width = decoder.PixelWidth;
+                uint height = decoder.PixelHeight;
+                var size = Core.ThumbnailSize.Fit(width, height, 256);
+                var pixels = await decoder.GetPixelDataAsync(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Premultiplied,
+                    new BitmapTransform { ScaledWidth = size.Width, ScaledHeight = size.Height },
+                    ExifOrientationMode.IgnoreExifOrientation, ColorManagementMode.DoNotColorManage);
+                var thumbnail = new InMemoryRandomAccessStream();
+                try
+                {
+                    var encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, thumbnail);
+                    encoder.SetPixelData(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Premultiplied,
+                        size.Width, size.Height, 96, 96, pixels.DetachPixelData());
+                    await encoder.FlushAsync();
+                    thumbnail.Seek(0);
+                    return (thumbnail, width, height);
+                }
+                catch { thumbnail.Dispose(); throw; }
+            });
+            using var thumbnailStream = thumbnail;
+            var bitmap = new BitmapImage();
+            await bitmap.SetSourceAsync(thumbnailStream);
             return (bitmap, width, height);
         }
         catch (COMException)
@@ -66,43 +79,43 @@ internal static partial class DataHelper
         }
     }
 
-    internal static async Task<DetectedClipboardDataType> GetDetectedClipboardDataTypeAsync(ClipboardHistoryItem item)
+    internal static async Task<DetectedClipboardDataType> GetDetectedClipboardDataTypeAsync(DataPackageView content)
     {
-        if (item.Content.AvailableFormats.Contains(StandardDataFormats.StorageItems))
+        if (content.AvailableFormats.Contains(StandardDataFormats.StorageItems))
         {
             return DetectedClipboardDataType.File;
         }
-        else if (item.Content.AvailableFormats.Contains(StandardDataFormats.Bitmap))
+        else if (content.AvailableFormats.Contains(StandardDataFormats.Bitmap))
         {
             return DetectedClipboardDataType.Image;
         }
-        else if (item.Content.AvailableFormats.Contains("DeviceIndependentBitmap") ||
-                 item.Content.AvailableFormats.Contains("DeviceIndependentBitmapV5") ||
-                 item.Content.AvailableFormats.Contains("TaggedImageFileFormat") ||
-                 item.Content.AvailableFormats.Contains("EnhancedMetafile"))
+        else if (content.AvailableFormats.Contains("DeviceIndependentBitmap") ||
+                 content.AvailableFormats.Contains("DeviceIndependentBitmapV5") ||
+                 content.AvailableFormats.Contains("TaggedImageFileFormat") ||
+                 content.AvailableFormats.Contains("EnhancedMetafile"))
         {
             return DetectedClipboardDataType.Image;
         }
-        else if (item.Content.AvailableFormats.Contains(StandardDataFormats.Rtf))
+        else if (content.AvailableFormats.Contains(StandardDataFormats.Rtf))
         {
             return DetectedClipboardDataType.Rtf;
         }
-        else if (item.Content.AvailableFormats.Contains(StandardDataFormats.ApplicationLink))
+        else if (content.AvailableFormats.Contains(StandardDataFormats.ApplicationLink))
         {
             return DetectedClipboardDataType.ApplicationLink;
         }
-        else if (item.Content.AvailableFormats.Contains(StandardDataFormats.UserActivityJsonArray))
+        else if (content.AvailableFormats.Contains(StandardDataFormats.UserActivityJsonArray))
         {
             return DetectedClipboardDataType.UserActivity;
         }
-        else if (item.Content.AvailableFormats.Contains(StandardDataFormats.WebLink)
-            || item.Content.AvailableFormats.Contains(StandardDataFormats.Uri))
+        else if (content.AvailableFormats.Contains(StandardDataFormats.WebLink)
+            || content.AvailableFormats.Contains(StandardDataFormats.Uri))
         {
             return DetectedClipboardDataType.Uri;
         }
-        else if (item.Content.AvailableFormats.Contains(StandardDataFormats.Text))
+        else if (content.AvailableFormats.Contains(StandardDataFormats.Text))
         {
-            string text = await item.Content.GetTextAsync();
+            string text = await content.GetTextAsync();
             if (IsHexColor(text))
             {
                 return DetectedClipboardDataType.Color;
@@ -114,11 +127,11 @@ internal static partial class DataHelper
 
             return DetectedClipboardDataType.Text;
         }
-        else if (item.Content.AvailableFormats.Contains(StandardDataFormats.Html))
+        else if (content.AvailableFormats.Contains(StandardDataFormats.Html))
         {
-            if (item.Content.AvailableFormats.Contains(StandardDataFormats.Text))
+            if (content.AvailableFormats.Contains(StandardDataFormats.Text))
             {
-                string text = await item.Content.GetTextAsync();
+                string text = await content.GetTextAsync();
                 if (IsUri(text))
                 {
                     return DetectedClipboardDataType.Uri;
@@ -127,15 +140,15 @@ internal static partial class DataHelper
 
             return DetectedClipboardDataType.Html;
         }
-        else if (item.Content.AvailableFormats.Contains("AnsiText") ||
-                 item.Content.AvailableFormats.Contains("OEMText") ||
-                 item.Content.AvailableFormats.Contains("TEXT"))
+        else if (content.AvailableFormats.Contains("AnsiText") ||
+                 content.AvailableFormats.Contains("OEMText") ||
+                 content.AvailableFormats.Contains("TEXT"))
         {
             return DetectedClipboardDataType.Text;
         }
 
         // Log unknown formats for debugging and future enhancement
-        LogUnknownFormats(item.Content.AvailableFormats);
+        LogUnknownFormats(content.AvailableFormats);
         return DetectedClipboardDataType.Unknown;
     }
 

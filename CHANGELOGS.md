@@ -1,3 +1,11 @@
+# 0.10.1-unlimited.2
+- Stopped reading native clipboard image content during XAML layout.
+- Moved thumbnail reads and decoding to background work.
+- Moved the Win+V keyboard hook to a dedicated message loop.
+- Kept ordinary keys and injected input outside shortcut handling.
+- Coalesced clipboard notifications and retained existing bar controls during refresh.
+- Isolated unavailable history entries so other items can still refresh.
+
 # 0.10.1-unlimited.1
 - Removed network requests for link icons.
 - Applied password masking to previews and search indexing.

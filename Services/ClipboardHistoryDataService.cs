@@ -20,6 +20,7 @@ internal sealed class ClipboardHistoryDataService
     private readonly ILogger _logger;
     private readonly ConcurrentDictionary<string, DetectedClipboardDataType> _dataTypeCache = new();
     private readonly ConcurrentDictionary<string, string> _signatureCache = new();
+    private readonly ConcurrentDictionary<string, LiveClipboardItemSource> _sourceCache = new();
 
     private IReadOnlyList<ClipboardItemData> _cachedItems = [];
     private int _subscriberCount;
@@ -44,7 +45,7 @@ internal sealed class ClipboardHistoryDataService
     /// <summary>
     /// Gets the current cached clipboard items with their detected data types.
     /// </summary>
-    public IReadOnlyList<ClipboardItemData> GetCachedItems() => _cachedItems;
+    public IReadOnlyList<ClipboardItemData> GetCachedItems() => Volatile.Read(ref _cachedItems);
 
     internal Task DeleteBySignatureAsync(string signature)
         => ThreadHelper.RunOnUIThreadAsync(() =>
@@ -98,16 +99,21 @@ internal sealed class ClipboardHistoryDataService
                 var itemDataList = new List<ClipboardItemData>(clipboardItems.Count);
                 foreach (ClipboardHistoryItem item in clipboardItems)
                 {
-                    DetectedClipboardDataType dataType = await GetOrComputeDataTypeAsync(item);
-                    string signature = await GetOrComputeSignatureAsync(item, dataType);
-                    itemDataList.Add(new ClipboardItemData(new LiveClipboardItemSource(item), dataType, signature)
-                    { CapturedAt = item.Timestamp });
+                    try
+                    {
+                        // Resolve native history properties on this worker, never during XAML layout.
+                        var source = _sourceCache.GetOrAdd(item.Id, _ => new LiveClipboardItemSource(item, item.Content));
+                        DetectedClipboardDataType dataType = await GetOrComputeDataTypeAsync(item, source.Data);
+                        string signature = await GetOrComputeSignatureAsync(item, source.Data, dataType);
+                        itemDataList.Add(new ClipboardItemData(source, dataType, signature) { CapturedAt = item.Timestamp });
+                    }
+                    catch (Exception ex) { _logger.LogWarning(ex, "A Windows clipboard entry is no longer available."); }
                 }
 
                 // Prune cache of items no longer in history
                 PruneCache(clipboardItems);
 
-                _cachedItems = itemDataList;
+                Volatile.Write(ref _cachedItems, itemDataList);
             }
         });
     }
@@ -122,7 +128,7 @@ internal sealed class ClipboardHistoryDataService
         _signatureCache.Clear();
     }
 
-    private async Task<string> GetOrComputeSignatureAsync(ClipboardHistoryItem item, DetectedClipboardDataType dataType)
+    private async Task<string> GetOrComputeSignatureAsync(ClipboardHistoryItem item, DataPackageView content, DetectedClipboardDataType dataType)
     {
         if (_signatureCache.TryGetValue(item.Id, out string? cached))
         {
@@ -131,7 +137,7 @@ internal sealed class ClipboardHistoryDataService
 
         try
         {
-            string signature = await ClipboardContentCapturer.ComputeSignatureAsync(item.Content, dataType);
+            string signature = await ClipboardContentCapturer.ComputeSignatureAsync(content, dataType);
             _signatureCache.TryAdd(item.Id, signature);
             return signature;
         }
@@ -142,7 +148,7 @@ internal sealed class ClipboardHistoryDataService
         }
     }
 
-    private async Task<DetectedClipboardDataType> GetOrComputeDataTypeAsync(ClipboardHistoryItem item)
+    private async Task<DetectedClipboardDataType> GetOrComputeDataTypeAsync(ClipboardHistoryItem item, DataPackageView content)
     {
         if (_dataTypeCache.TryGetValue(item.Id, out DetectedClipboardDataType cachedType))
         {
@@ -151,7 +157,7 @@ internal sealed class ClipboardHistoryDataService
 
         try
         {
-            DetectedClipboardDataType dataType = await DataHelper.GetDetectedClipboardDataTypeAsync(item);
+            DetectedClipboardDataType dataType = await DataHelper.GetDetectedClipboardDataTypeAsync(content);
             _dataTypeCache.TryAdd(item.Id, dataType);
             return dataType;
         }
@@ -173,6 +179,10 @@ internal sealed class ClipboardHistoryDataService
                 _signatureCache.TryRemove(cachedId, out _);
             }
         }
+        foreach (string cachedId in _sourceCache.Keys)
+            if (!currentIds.Contains(cachedId)) _sourceCache.TryRemove(cachedId, out _);
+        foreach (string cachedId in _signatureCache.Keys)
+            if (!currentIds.Contains(cachedId)) _signatureCache.TryRemove(cachedId, out _);
     }
 
     private async Task<IReadOnlyList<ClipboardHistoryItem>> GetClipboardHistoryItemsAsync()

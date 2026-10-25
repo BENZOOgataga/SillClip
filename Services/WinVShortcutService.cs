@@ -1,6 +1,8 @@
 using System.ComponentModel.Composition;
 using System.Runtime.InteropServices;
 using WindowSill.ClipboardHistory.Core;
+using Microsoft.Extensions.Logging;
+using WindowSill.API;
 
 namespace WindowSill.ClipboardHistory.Services;
 
@@ -10,7 +12,6 @@ namespace WindowSill.ClipboardHistory.Services;
 [Export(typeof(WinVShortcutService))]
 internal sealed class WinVShortcutService : IDisposable
 {
-    private const int WhKeyboardLl = 13;
     private const uint WmKeyDown = 0x0100;
     private const uint WmKeyUp = 0x0101;
     private const uint WmSysKeyDown = 0x0104;
@@ -25,54 +26,45 @@ internal sealed class WinVShortcutService : IDisposable
     private const uint InputKeyboard = 1;
     private const uint KeyEventKeyUp = 2;
 
-    private readonly LowLevelKeyboardProc _hookCallback;
-    private nint _hookHandle;
+    private readonly KeyboardHookPump _pump;
+    private readonly ILogger _logger;
+    private long _generation;
     private readonly WinVShortcutState _shortcutState = new();
 
     [ImportingConstructor]
     public WinVShortcutService()
     {
-        _hookCallback = HookCallback;
+        _logger = this.Log();
+        _pump = new KeyboardHookPump(HookCallback, _shortcutState.Reset);
     }
 
     internal event EventHandler? ShortcutPressed;
 
-    internal bool IsActive => _hookHandle != nint.Zero;
+    internal bool IsActive => _pump.IsActive;
 
-    internal bool Start()
+    internal Task<bool> StartAsync() => _pump.StartAsync();
+
+    internal Task StopAsync()
     {
-        if (IsActive)
-        {
-            return true;
-        }
-
-        _hookHandle = SetWindowsHookEx(WhKeyboardLl, _hookCallback, nint.Zero, 0);
-        return IsActive;
-    }
-
-    internal void Stop()
-    {
-        if (_hookHandle != nint.Zero)
-        {
-            UnhookWindowsHookEx(_hookHandle);
-            _hookHandle = nint.Zero;
-        }
-
-        _shortcutState.Reset();
+        Interlocked.Increment(ref _generation);
+        return _pump.StopAsync();
     }
 
     public void Dispose()
     {
-        Stop();
+        StopAsync().Forget();
     }
 
     private nint HookCallback(int code, nuint message, nint keyboardDataAddress)
     {
         try
         {
-            if (code >= 0)
+            if (code >= 0 && IsActive)
             {
                 var keyboardData = Marshal.PtrToStructure<KeyboardData>(keyboardDataAddress);
+                // Ordinary gameplay keys and injected input never enter shortcut handling.
+                if ((keyboardData.Flags & 0x10) != 0 || keyboardData.VirtualKey is not (VkV or VkLeftWindows or VkRightWindows))
+                    return CallNextHookEx(0, code, message, keyboardDataAddress);
                 uint keyboardMessage = unchecked((uint)message);
                 bool isKeyDown = keyboardMessage is WmKeyDown or WmSysKeyDown;
                 bool isKeyUp = keyboardMessage is WmKeyUp or WmSysKeyUp;
@@ -81,7 +73,16 @@ internal sealed class WinVShortcutService : IDisposable
                 var decision = _shortcutState.Process(keyboardData.VirtualKey, isKeyDown, isKeyUp,
                     IsWindowsKeyDown(), IsAnotherModifierDown(), IsKeyDown(otherWindowsKey));
                 if (decision.MaskMenu) SendMenuMask();
-                if (decision.Open) ShortcutPressed?.Invoke(this, EventArgs.Empty);
+                if (decision.Open)
+                {
+                    long generation = Volatile.Read(ref _generation);
+                    ThreadPool.QueueUserWorkItem(_ =>
+                    {
+                        if (generation != Volatile.Read(ref _generation) || !IsActive) return;
+                        try { ShortcutPressed?.Invoke(this, EventArgs.Empty); }
+                        catch (Exception ex) { _logger.LogWarning(ex, "The clipboard shortcut could not be opened."); }
+                    });
+                }
                 if (decision.Suppress) return new nint(1);
             }
         }
@@ -90,7 +91,7 @@ internal sealed class WinVShortcutService : IDisposable
             // Native hook callbacks must never allow managed exceptions to escape.
         }
 
-        return CallNextHookEx(_hookHandle, code, message, keyboardDataAddress);
+        return CallNextHookEx(0, code, message, keyboardDataAddress);
     }
 
     private static bool IsWindowsKeyDown()
@@ -158,19 +159,6 @@ internal sealed class WinVShortcutService : IDisposable
         internal readonly uint Time;
         internal readonly nuint ExtraInfo;
     }
-
-    private delegate nint LowLevelKeyboardProc(int code, nuint message, nint keyboardDataAddress);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern nint SetWindowsHookEx(
-        int hookType,
-        LowLevelKeyboardProc hookCallback,
-        nint moduleHandle,
-        uint threadId);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool UnhookWindowsHookEx(nint hookHandle);
 
     [DllImport("user32.dll")]
     private static extern nint CallNextHookEx(

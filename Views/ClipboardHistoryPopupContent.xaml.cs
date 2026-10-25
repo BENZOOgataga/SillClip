@@ -114,7 +114,11 @@ internal sealed partial class ClipboardHistoryPopupContent : SillPopupContent
 
     private void ClipboardItems_ContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
-        if (args.InRecycleQueue && args.Item is ImageItemViewModel image) image.ReleasePreview();
+        if (args.Item is ImageItemViewModel image)
+        {
+            if (args.InRecycleQueue) image.ReleasePreview();
+            else image.RequestPreview();
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]

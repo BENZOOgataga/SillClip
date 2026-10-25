@@ -6,6 +6,21 @@ namespace UnitTests;
 
 public sealed class ClipboardTests
 {
+    [Fact]
+    public void LargeUnicodeAndRichPayloadsProduceStableSignatures()
+    {
+        var item = new PinnedClipboardItem
+        {
+            DataType = DetectedClipboardDataType.Text,
+            Text = string.Concat(Enumerable.Repeat("Texte long éèà 😀\r\n", 100000)),
+            Html = "<html><broken-tag>",
+            Rtf = "{\\rtf1 malformed"
+        };
+        string signature = ClipboardSignature.Compute(item);
+        Assert.Equal(64, signature.Length);
+        Assert.Equal(signature, ClipboardSignature.Compute(item));
+    }
+
     [Theory]
     [InlineData("v0.10.1-unlimited.10", "0.10.1-unlimited.2", true)]
     [InlineData("0.10.1", "0.10.1-unlimited.10", true)]

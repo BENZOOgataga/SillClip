@@ -54,4 +54,17 @@ public sealed class ShortcutTests
         Assert.Equal(default, state.Process(0x5B, false, true, true, false, false));
         Assert.Equal(default, state.Process(0x56, false, true, false, false, false));
     }
+
+    [Fact]
+    public void GameplayKeysAlwaysPassThroughEvenDuringWinV()
+    {
+        var state = new WinVShortcutState();
+        state.Process(0x56, true, false, true, false, false);
+        foreach (uint key in new uint[] { 0x57, 0x41, 0x53, 0x44, 0x5A, 0x51, 0x20, 0x10, 0x11, 0x25, 0x26, 0x27, 0x28 })
+        {
+            Assert.Equal(default, state.Process(key, true, false, true, false, false));
+            Assert.Equal(default, state.Process(key, true, false, true, false, false));
+            Assert.Equal(default, state.Process(key, false, true, true, false, false));
+        }
+    }
 }

@@ -11,6 +11,7 @@ internal sealed partial class ImageItemPreviewView : UserControl
     {
         ViewModel = viewModel;
         InitializeComponent();
+        Loaded += (_, _) => ViewModel.RequestPreview();
     }
 
     /// <summary>

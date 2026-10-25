@@ -8,10 +8,14 @@ namespace WindowSill.ClipboardHistory.Core;
 internal sealed class LiveClipboardItemSource : IClipboardItemSource
 {
     private readonly ClipboardHistoryItem _item;
+    private readonly DataPackageView _data;
+    private readonly string _id;
 
-    internal LiveClipboardItemSource(ClipboardHistoryItem item)
+    internal LiveClipboardItemSource(ClipboardHistoryItem item, DataPackageView data)
     {
         _item = item;
+        _data = data;
+        _id = item.Id;
     }
 
     /// <summary>
@@ -20,13 +24,13 @@ internal sealed class LiveClipboardItemSource : IClipboardItemSource
     internal ClipboardHistoryItem Item => _item;
 
     /// <inheritdoc />
-    public string Id => _item.Id;
+    public string Id => _id;
 
     /// <inheritdoc />
     public bool IsPinned => false;
 
     /// <inheritdoc />
-    public DataPackageView Data => _item.Content;
+    public DataPackageView Data => _data;
 
     /// <inheritdoc />
     public void SetAsClipboardContent() => Clipboard.SetHistoryItemAsContent(_item);
