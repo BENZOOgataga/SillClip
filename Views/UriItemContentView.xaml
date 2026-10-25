@@ -16,11 +16,10 @@
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
 
-        <ImageIcon
+        <FontIcon
             Grid.Column="0"
-            MaxWidth="16"
-            MaxHeight="16"
-            Source="{x:Bind ViewModel.Favicon, Mode=OneWay}" />
+            FontSize="16"
+            Glyph="&#xE71B;" />
 
         <TextBlock
             Grid.Column="1"

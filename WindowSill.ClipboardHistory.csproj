@@ -1,33 +1,31 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <PackageId>WindowSill.ClipboardHistory</PackageId>
-        <Version>0.10.0-unlimited.1</Version>
+        <PackageId>WindowSill.ClipboardHistory.NoLimits</PackageId>
+        <AssemblyName>WindowSill.ClipboardHistory</AssemblyName>
+        <Version>0.10.1-unlimited.1</Version>
         <Authors>Etienne Baudoux, BENZOOgataga</Authors>
         <Title>Clipboard History No Limits</Title>
         <Description>
-          Never lose what you've copied again. Access your clipboard history instantly and paste any previous item with a single click or keyboard shortcut.
-
-          Key features:
-          Tracks text, images, URIs, colors and files.
-          Searches large histories from a dedicated popup.
-          Keeps an encrypted history across restarts.
-          Supports unlimited, 500, 1000 or custom retention limits.
-          Opens the searchable history with Win+V.
-          Checks GitHub Releases for extension updates.
-
-          Your clipboard, supercharged.
+          A free fork of WindowSill Clipboard History with custom or unlimited retention,
+          encrypted storage across restarts, search, and a Win+V popup.
+          Set the item limit to 0 or -1 for unlimited history, or use a positive number.
         </Description>
         <PackageIcon>Assets/package.png</PackageIcon>
         <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
         <PackageProjectUrl>https://github.com/BENZOOgataga/WindowSill-NoClipBoardHistoryLimit</PackageProjectUrl>
       <RepositoryUrl>https://github.com/BENZOOgataga/WindowSill-NoClipBoardHistoryLimit</RepositoryUrl>
     </PropertyGroup>
     <ItemGroup>
+        <Content Remove="Assets/package.png" />
         <None Include="Assets/package.png" Pack="true" PackagePath="\Assets\" />
+        <None Update="README.md" Pack="true" PackagePath="\" />
         <None Include="LICENSE.md" Pack="true" PackagePath="\" />
         <None Include="CHANGELOGS.md" Pack="true" PackagePath="\" />
     </ItemGroup>
     <ItemGroup>
+        <PackageReference Include="NuGet.Versioning" />
+        <PackageReference Include="Microsoft.Windows.SDK.BuildTools" PrivateAssets="all" />
         <PackageReference Include="Microsoft.Windows.SDK.BuildTools.MSIX" PrivateAssets="all" />
         <PackageReference Include="Microsoft.Windows.CsWin32">
             <PrivateAssets>all</PrivateAssets>

@@ -25,7 +25,6 @@ internal sealed partial class ImageItemViewModel : ClipboardHistoryItemViewModel
         : base(processInteractionService, source)
     {
         _logger = this.Log();
-        InitializeAsync().Forget();
     }
 
     [ObservableProperty]
@@ -40,27 +39,48 @@ internal sealed partial class ImageItemViewModel : ClipboardHistoryItemViewModel
     [ObservableProperty]
     public partial double MaxWidth { get; set; }
 
-    [ObservableProperty]
-    public partial BitmapImage? Image { get; set; }
+    private BitmapImage? _image;
+    private bool _loading;
+    private int _previewVersion;
+    public BitmapImage? Image
+    {
+        get
+        {
+            if (_image is null && !_loading)
+            {
+                _loading = true;
+                InitializeAsync(_previewVersion).Forget();
+            }
+            return _image;
+        }
+        private set => SetProperty(ref _image, value);
+    }
 
-    private async Task InitializeAsync()
+    internal void ReleasePreview()
+    {
+        _previewVersion++;
+        _image = null;
+        _loading = false;
+    }
+
+    private async Task InitializeAsync(int version)
     {
         try
         {
             Guard.IsNotNull(Data);
-            BitmapImage? bitmap = await DataHelper.GetBitmapAsync(Data);
+            var (bitmap, width, height) = await DataHelper.GetBitmapAsync(Data);
+            if (version != _previewVersion) return;
             Image = bitmap;
 
             if (bitmap is not null)
             {
-                MaxHeight = bitmap.PixelHeight;
-                MaxWidth = bitmap.PixelWidth;
-                Image = bitmap;
+                MaxHeight = height;
+                MaxWidth = width;
                 Size
                     = string.Format(
                         "/WindowSill.ClipboardHistory/Misc/ImageSize".GetLocalizedString(),
-                        bitmap.PixelWidth,
-                        bitmap.PixelHeight);
+                        width,
+                        height);
             }
             else
             {

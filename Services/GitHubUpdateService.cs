@@ -2,21 +2,41 @@ using System.ComponentModel.Composition;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using WindowSill.API;
+using WindowSill.ClipboardHistory.Core;
 
 namespace WindowSill.ClipboardHistory.Services;
 
 /// <summary>
-/// Checks the public GitHub repository for a newer stable release.
+/// Checks the public GitHub repository for a newer installable release.
 /// </summary>
 [Export(typeof(GitHubUpdateService))]
 internal sealed class GitHubUpdateService
 {
     private const string LatestReleaseApi =
-        "https://api.github.com/repos/BENZOOgataga/WindowSill-NoClipBoardHistoryLimit/releases/latest";
+        "https://api.github.com/repos/BENZOOgataga/WindowSill-NoClipBoardHistoryLimit/releases?per_page=100";
 
     private static readonly HttpClient HttpClient = CreateHttpClient();
     private readonly SemaphoreSlim _semaphore = new(1, 1);
     private bool _checked;
+    private DateTimeOffset _lastCheck;
+    private Timer? _timer;
+    private int _subscribers;
+
+    internal void Start()
+    {
+        if (Interlocked.Increment(ref _subscribers) == 1)
+            _timer = new Timer(_ => CheckAsync().Forget(), null, TimeSpan.Zero, TimeSpan.FromHours(6));
+    }
+
+    internal void Stop()
+    {
+        if (Interlocked.Decrement(ref _subscribers) == 0)
+        {
+            _timer?.Dispose();
+            _timer = null;
+        }
+    }
 
     internal event EventHandler? StatusChanged;
 
@@ -33,14 +53,14 @@ internal sealed class GitHubUpdateService
     internal bool HasChecked => _checked;
 
     internal bool IsUpdateAvailable
-        => LatestVersion is not null && CompareVersions(LatestVersion, CurrentVersion) > 0;
+        => LatestVersion is not null && ReleaseVersion.IsNewer(LatestVersion, CurrentVersion);
 
     internal async Task CheckAsync(bool force = false, CancellationToken cancellationToken = default)
     {
         await _semaphore.WaitAsync(cancellationToken);
         try
         {
-            if (_checked && !force)
+            if (_checked && !force && DateTimeOffset.UtcNow - _lastCheck < TimeSpan.FromHours(6))
             {
                 return;
             }
@@ -55,19 +75,33 @@ internal sealed class GitHubUpdateService
                 LatestVersion = null;
                 LatestReleaseUri = null;
                 _checked = true;
+                _lastCheck = DateTimeOffset.UtcNow;
                 return;
             }
 
             response.EnsureSuccessStatusCode();
             await using Stream stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-            GitHubRelease? release = await JsonSerializer.DeserializeAsync<GitHubRelease>(
+            GitHubRelease[] releases = await JsonSerializer.DeserializeAsync<GitHubRelease[]>(
                 stream,
                 JsonSerializerOptions.Web,
-                cancellationToken);
+                cancellationToken) ?? [];
+
+            GitHubRelease? release = null;
+            foreach (var candidate in releases)
+            {
+                if (!ReleaseVersion.IsValid(candidate.TagName)) continue;
+                if (candidate.Draft || (candidate.Prerelease && !ReleaseVersion.IsPrerelease(CurrentVersion))) continue;
+                if (candidate.Assets?.Any(asset => asset.Name.StartsWith("WindowSill.ClipboardHistory.NoLimits.", StringComparison.Ordinal)
+                    && asset.Name.EndsWith(".wsext", StringComparison.OrdinalIgnoreCase)) != true) continue;
+                if (release is null || ReleaseVersion.IsNewer(candidate.TagName, release.TagName)) release = candidate;
+            }
 
             LatestVersion = release?.TagName?.TrimStart('v', 'V');
-            LatestReleaseUri = Uri.TryCreate(release?.HtmlUrl, UriKind.Absolute, out Uri? uri) ? uri : null;
+            LatestReleaseUri = Uri.TryCreate(release?.HtmlUrl, UriKind.Absolute, out Uri? uri)
+                && uri.Scheme == Uri.UriSchemeHttps && uri.Host == "github.com"
+                && uri.AbsolutePath.StartsWith("/BENZOOgataga/WindowSill-NoClipBoardHistoryLimit/releases/", StringComparison.OrdinalIgnoreCase) ? uri : null;
             _checked = true;
+            _lastCheck = DateTimeOffset.UtcNow;
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
@@ -178,5 +212,10 @@ internal sealed class GitHubUpdateService
 
     private sealed record GitHubRelease(
         [property: JsonPropertyName("tag_name")] string TagName,
-        [property: JsonPropertyName("html_url")] string HtmlUrl);
+        [property: JsonPropertyName("html_url")] string HtmlUrl,
+        [property: JsonPropertyName("draft")] bool Draft,
+        [property: JsonPropertyName("prerelease")] bool Prerelease,
+        [property: JsonPropertyName("assets")] GitHubAsset[]? Assets);
+
+    private sealed record GitHubAsset([property: JsonPropertyName("name")] string Name);
 }

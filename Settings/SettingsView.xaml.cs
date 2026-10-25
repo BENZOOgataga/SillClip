@@ -13,6 +13,8 @@ internal sealed partial class SettingsView : UserControl
     {
         ViewModel = new SettingsViewModel(settingsProvider, updateService);
         InitializeComponent();
+        Loaded += (_, _) => ViewModel.Attach();
+        Unloaded += (_, _) => ViewModel.Detach();
     }
 
     /// <summary>
@@ -27,7 +29,7 @@ internal sealed partial class SettingsView : UserControl
 
     private async void UpdateActionButton_Click(object sender, RoutedEventArgs e)
     {
-        if (ViewModel.LatestReleaseUri is Uri releaseUri)
+        if (ViewModel.HasNewerRelease && ViewModel.LatestReleaseUri is Uri releaseUri)
         {
             await Launcher.LaunchUriAsync(releaseUri);
             return;

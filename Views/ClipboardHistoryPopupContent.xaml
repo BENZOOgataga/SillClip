@@ -190,12 +190,11 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <ImageIcon
+                <FontIcon
                     Grid.Column="0"
-                    MaxWidth="16"
-                    MaxHeight="16"
                     VerticalAlignment="Center"
-                    Source="{x:Bind Favicon, Mode=OneWay}" />
+                    FontSize="16"
+                    Glyph="&#xE71B;" />
                 <TextBlock
                     Grid.Column="1"
                     VerticalAlignment="Center"
@@ -493,11 +492,21 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <TextBlock
+            <Border
+                x:Name="DragHandle"
                 Grid.Column="0"
-                VerticalAlignment="Center"
-                Style="{ThemeResource SubtitleTextBlockStyle}"
-                Text="{x:Bind PopupTitle}" />
+                Background="Transparent"
+                PointerPressed="DragHandle_PointerPressed"
+                PointerMoved="DragHandle_PointerMoved"
+                PointerReleased="DragHandle_PointerReleased"
+                PointerCaptureLost="DragHandle_PointerCaptureLost">
+                <TextBlock
+                    VerticalAlignment="Center"
+                    Style="{ThemeResource SubtitleTextBlockStyle}"
+                    TextTrimming="CharacterEllipsis"
+                    TextWrapping="NoWrap"
+                    Text="{x:Bind PopupTitle}" />
+            </Border>
             <Button
                 Grid.Column="1"
                 Width="32"
@@ -519,7 +528,7 @@
             PlaceholderText="{x:Bind SearchPlaceholder}"
             Text="{x:Bind ViewModel.SearchQuery, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
             <AutoSuggestBox.QueryIcon>
-                <SymbolIcon Symbol="Find" />
+                <FontIcon Glyph="&#xE721;" FontSize="14" Width="16" Height="16" />
             </AutoSuggestBox.QueryIcon>
         </AutoSuggestBox>
 
@@ -552,9 +561,13 @@
             IsItemClickEnabled="True"
             ItemClick="ClipboardItemsShortcutListView_ItemClick"
             ItemInvoked="ClipboardItemsShortcutListView_ItemInvoked"
+            ContainerContentChanging="ClipboardItems_ContainerContentChanging"
             ItemTemplateSelector="{StaticResource PopupItemTemplateSelector}"
             ItemsSource="{x:Bind ViewModel.Items}"
             SelectionMode="None">
+            <ui:ShortcutListView.ItemsPanel>
+                <ItemsPanelTemplate><ItemsStackPanel /></ItemsPanelTemplate>
+            </ui:ShortcutListView.ItemsPanel>
             <ui:ShortcutListView.Template>
                 <ControlTemplate TargetType="ui:ShortcutListView">
                     <Border

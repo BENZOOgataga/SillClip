@@ -46,6 +46,13 @@ internal sealed class ClipboardHistoryDataService
     /// </summary>
     public IReadOnlyList<ClipboardItemData> GetCachedItems() => _cachedItems;
 
+    internal Task DeleteBySignatureAsync(string signature)
+        => ThreadHelper.RunOnUIThreadAsync(() =>
+        {
+            foreach (var item in GetCachedItems().Where(item => item.ContentSignature == signature))
+                item.Source.DeleteFromHistory();
+        });
+
     /// <summary>
     /// Subscribes to clipboard events. Call this when a consumer activates.
     /// The service only listens to clipboard events when there's at least one subscriber.
@@ -93,7 +100,8 @@ internal sealed class ClipboardHistoryDataService
                 {
                     DetectedClipboardDataType dataType = await GetOrComputeDataTypeAsync(item);
                     string signature = await GetOrComputeSignatureAsync(item, dataType);
-                    itemDataList.Add(new ClipboardItemData(new LiveClipboardItemSource(item), dataType, signature));
+                    itemDataList.Add(new ClipboardItemData(new LiveClipboardItemSource(item), dataType, signature)
+                    { CapturedAt = item.Timestamp });
                 }
 
                 // Prune cache of items no longer in history

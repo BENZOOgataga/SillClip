@@ -36,4 +36,7 @@ internal static class Settings
 
     internal static readonly SettingDefinition<bool> UnlimitedDefaultsApplied
         = new(false, typeof(Settings).Assembly);
+
+    internal static readonly SettingDefinition<int> PopupX = new(int.MinValue, typeof(Settings).Assembly);
+    internal static readonly SettingDefinition<int> PopupY = new(int.MinValue, typeof(Settings).Assembly);
 }

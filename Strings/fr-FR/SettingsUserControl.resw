@@ -130,7 +130,7 @@
     <value>Masquer les mots de passe</value>
   </data>
   <data name="MaxItemNumber.DescriptionProperty" xml:space="preserve">
-    <value>Utilisez 0 ou -1 pour ne pas limiter le nombre d'elements</value>
+    <value>Utilisez 0 ou -1 pour ne pas limiter le nombre d'éléments</value>
   </data>
   <data name="MaxItemNumber.HeaderProperty" xml:space="preserve">
     <value>Nombre maximum d’éléments</value>
@@ -148,7 +148,7 @@
     <value>Historique persistant</value>
   </data>
   <data name="PersistentHistory.DescriptionProperty" xml:space="preserve">
-    <value>Conserver un historique chiffre apres les redemarrages de Windows et WindowSill</value>
+    <value>Conserver un historique chiffré après les redémarrages de Windows et WindowSill</value>
   </data>
   <data name="OverrideWindowsV.HeaderProperty" xml:space="preserve">
     <value>Ouvrir cet historique avec Win+V</value>
@@ -157,6 +157,6 @@
     <value>Remplacer le panneau Windows tant que cette extension est active</value>
   </data>
   <data name="Updates.HeaderProperty" xml:space="preserve">
-    <value>Mises a jour de l'extension</value>
+    <value>Vérification des mises à jour</value>
   </data>
 </root>

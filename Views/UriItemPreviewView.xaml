@@ -14,11 +14,10 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
-            <ImageIcon
+            <FontIcon
                 Grid.Column="0"
-                MaxWidth="24"
-                MaxHeight="24"
-                Source="{x:Bind ViewModel.LargerFavicon, Mode=OneWay}" />
+                FontSize="24"
+                Glyph="&#xE71B;" />
 
             <TextBlock
                 Grid.Column="1"

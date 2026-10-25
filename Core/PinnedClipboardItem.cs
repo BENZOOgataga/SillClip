@@ -39,6 +39,9 @@ internal sealed class PinnedClipboardItem
     public string? Uri { get; set; }
 
     public string? Color { get; set; }
+    public string? ImageContentHash { get; set; }
+    public string? ApplicationLink { get; set; }
+    public string? UserActivity { get; set; }
 
     public string[]? FilePaths { get; set; }
 

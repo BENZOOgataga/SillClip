@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
 using Windows.Storage.Streams;
@@ -31,29 +29,26 @@ internal static class ClipboardContentCapturer
         {
             item.Text = await data.GetTextAsync();
         }
+        if (formats.Contains(StandardDataFormats.Html)) item.Html = await data.GetHtmlFormatAsync();
+        if (formats.Contains(StandardDataFormats.Rtf)) item.Rtf = await data.GetRtfAsync();
 
         switch (dataType)
         {
-            case DetectedClipboardDataType.Html:
-                if (formats.Contains(StandardDataFormats.Html))
-                {
-                    item.Html = await data.GetHtmlFormatAsync();
-                }
-                break;
-
-            case DetectedClipboardDataType.Rtf:
-                if (formats.Contains(StandardDataFormats.Rtf))
-                {
-                    item.Rtf = await data.GetRtfAsync();
-                }
-                break;
-
             case DetectedClipboardDataType.Uri:
                 item.Uri = item.Text;
                 if (string.IsNullOrEmpty(item.Uri) && formats.Contains(StandardDataFormats.WebLink))
                 {
                     item.Uri = (await data.GetWebLinkAsync()).ToString();
                 }
+                if (string.IsNullOrEmpty(item.Uri) && formats.Contains(StandardDataFormats.Uri))
+                    item.Uri = (await data.GetUriAsync()).ToString();
+                break;
+
+            case DetectedClipboardDataType.ApplicationLink:
+                item.ApplicationLink = (await data.GetApplicationLinkAsync()).ToString();
+                break;
+            case DetectedClipboardDataType.UserActivity:
+                item.UserActivity = await data.GetDataAsync(StandardDataFormats.UserActivityJsonArray) as string;
                 break;
 
             case DetectedClipboardDataType.Color:
@@ -67,10 +62,11 @@ internal static class ClipboardContentCapturer
             case DetectedClipboardDataType.Image:
                 item.ImageBytes = await GetImageBytesAsync(data);
                 item.HasImage = item.ImageBytes is { Length: > 0 };
+                if (!item.HasImage) throw new NotSupportedException("The image has no readable bitmap payload.");
                 break;
         }
 
-        item.ContentSignature = ComputeSignature(dataType, item.Text, item.Uri, item.Color, item.FilePaths, item.ImageBytes);
+        item.ContentSignature = ClipboardSignature.Compute(item);
         return item;
     }
 
@@ -80,66 +76,7 @@ internal static class ClipboardContentCapturer
     /// </summary>
     internal static async Task<string> ComputeSignatureAsync(DataPackageView data, DetectedClipboardDataType dataType)
     {
-        string? text = null;
-        string? uri = null;
-        string? color = null;
-        string[]? filePaths = null;
-        byte[]? imageBytes = null;
-
-        IReadOnlyList<string> formats = data.AvailableFormats;
-
-        if (formats.Contains(StandardDataFormats.Text))
-        {
-            text = await data.GetTextAsync();
-        }
-
-        switch (dataType)
-        {
-            case DetectedClipboardDataType.Uri:
-                uri = text;
-                if (string.IsNullOrEmpty(uri) && formats.Contains(StandardDataFormats.WebLink))
-                {
-                    uri = (await data.GetWebLinkAsync()).ToString();
-                }
-                break;
-
-            case DetectedClipboardDataType.Color:
-                color = text;
-                break;
-
-            case DetectedClipboardDataType.File:
-                filePaths = await GetFilePathsAsync(data);
-                break;
-
-            case DetectedClipboardDataType.Image:
-                imageBytes = await GetImageBytesAsync(data);
-                break;
-        }
-
-        return ComputeSignature(dataType, text, uri, color, filePaths, imageBytes);
-    }
-
-    private static string ComputeSignature(
-        DetectedClipboardDataType dataType,
-        string? text,
-        string? uri,
-        string? color,
-        string[]? filePaths,
-        byte[]? imageBytes)
-    {
-        string canonical = dataType switch
-        {
-            DetectedClipboardDataType.Image when imageBytes is { Length: > 0 }
-                => "img:" + Convert.ToHexString(SHA256.HashData(imageBytes)),
-            DetectedClipboardDataType.File when filePaths is { Length: > 0 }
-                => "file:" + string.Join('|', filePaths),
-            DetectedClipboardDataType.Uri => "uri:" + (uri ?? string.Empty),
-            DetectedClipboardDataType.Color => "color:" + (color ?? string.Empty),
-            _ => $"{dataType}:{text ?? string.Empty}",
-        };
-
-        byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes(canonical));
-        return Convert.ToHexString(hash);
+        return (await CaptureAsync(data, dataType)).ContentSignature;
     }
 
     private static async Task<string[]?> GetFilePathsAsync(DataPackageView data)

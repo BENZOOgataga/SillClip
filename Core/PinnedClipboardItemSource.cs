@@ -18,7 +18,6 @@ internal sealed class PinnedClipboardItemSource : IClipboardItemSource
     {
         Model = model;
         _rebuild = rebuild;
-        Data = rebuild().GetView();
     }
 
     /// <summary>
@@ -33,7 +32,7 @@ internal sealed class PinnedClipboardItemSource : IClipboardItemSource
     public bool IsPinned => true;
 
     /// <inheritdoc />
-    public DataPackageView Data { get; }
+    public DataPackageView Data => _rebuild().GetView();
 
     /// <inheritdoc />
     public void SetAsClipboardContent() => Clipboard.SetContent(_rebuild());

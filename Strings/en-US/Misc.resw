@@ -124,7 +124,7 @@
     <value>Delete</value>
   </data>
   <data name="DisplayName" xml:space="preserve">
-    <value>Clipboard History</value>
+    <value>Clipboard History No Limits</value>
   </data>
   <data name="EmptyClipboard.TextProperty" xml:space="preserve">
     <value>The clipboard is empty.</value>
@@ -184,7 +184,7 @@
     <value>Current version: {0}. Updates are checked automatically.</value>
   </data>
   <data name="UpdateNoRelease" xml:space="preserve">
-    <value>No GitHub release has been published yet.</value>
+    <value>No installable GitHub release is available.</value>
   </data>
   <data name="OpenRelease" xml:space="preserve">
     <value>Open release</value>

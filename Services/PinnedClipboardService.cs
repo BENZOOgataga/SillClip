@@ -15,16 +15,19 @@ namespace WindowSill.ClipboardHistory.Services;
 internal sealed class PinnedClipboardService
 {
     private readonly PinnedClipboardStore _store;
+    private readonly string _dataFolder;
     private readonly DisposableSemaphore _semaphore = new();
     private readonly List<ClipboardItemData> _pinned = [];
     private readonly HashSet<string> _signatures = new(StringComparer.Ordinal);
 
     private bool _loaded;
+    private ClipboardItemData[] _snapshot = [];
 
     [ImportingConstructor]
     public PinnedClipboardService(IPluginInfo pluginInfo)
     {
-        _store = new PinnedClipboardStore(pluginInfo.GetPluginDataFolder());
+        _dataFolder = ClipboardDataMigration.ForkFolder(pluginInfo.GetPluginDataFolder());
+        _store = new PinnedClipboardStore(_dataFolder);
     }
 
     /// <summary>
@@ -36,12 +39,12 @@ internal sealed class PinnedClipboardService
     /// Gets a snapshot of the pinned items, newest first.
     /// </summary>
     public IReadOnlyList<ClipboardItemData> GetPinnedItems()
-        => [.. _pinned.OrderByDescending(p => ((PinnedClipboardItemSource)p.Source).Model.PinnedAt)];
+        => Volatile.Read(ref _snapshot);
 
     /// <summary>
     /// Gets whether an item with the given content signature is already pinned.
     /// </summary>
-    public bool IsPinnedSignature(string signature) => _signatures.Contains(signature);
+    public bool IsPinnedSignature(string signature) => GetPinnedItems().Any(item => item.ContentSignature == signature);
 
     /// <summary>
     /// Loads persisted pins into memory. Safe to call multiple times.
@@ -54,15 +57,18 @@ internal sealed class PinnedClipboardService
             return;
         }
 
+        await Task.Run(() => ClipboardDataMigration.Prepare(_dataFolder), cancellationToken);
         List<PinnedClipboardItem> models = await _store.LoadAllAsync(cancellationToken);
         foreach (PinnedClipboardItem model in models)
         {
+            model.ContentSignature = ClipboardSignature.Compute(model);
             ClipboardItemData data = await CreateDataAsync(model);
             _pinned.Add(data);
             _signatures.Add(model.ContentSignature);
         }
 
         _loaded = true;
+        Publish();
     }
 
     /// <summary>
@@ -79,11 +85,13 @@ internal sealed class PinnedClipboardService
 
         PinnedClipboardItem model = await ClipboardContentCapturer.CaptureAsync(itemData.Source.Data, itemData.DataType);
         await _store.SaveAsync(model, cancellationToken);
+        model.ImageBytes = null;
 
         ClipboardItemData data = await CreateDataAsync(model);
         _pinned.Add(data);
         _signatures.Add(model.ContentSignature);
 
+        Publish();
         PinsChanged?.Invoke(this, EventArgs.Empty);
         return true;
     }
@@ -101,24 +109,23 @@ internal sealed class PinnedClipboardService
             return;
         }
 
+        await _store.DeleteAsync(id, cancellationToken);
         _signatures.Remove(((PinnedClipboardItemSource)_pinned[index].Source).Model.ContentSignature);
         _pinned.RemoveAt(index);
-        await _store.DeleteAsync(id, cancellationToken);
 
+        Publish();
         PinsChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    private static async Task<ClipboardItemData> CreateDataAsync(PinnedClipboardItem model)
+    private Task<ClipboardItemData> CreateDataAsync(PinnedClipboardItem model)
     {
-        RandomAccessStreamReference? imageReference =
-            await PinnedClipboardRebuilder.CreateImageReferenceAsync(model.ImageBytes);
-        IReadOnlyList<IStorageItem>? storageItems =
-            await PinnedClipboardRebuilder.ResolveStorageItemsAsync(model.FilePaths);
-
         var source = new PinnedClipboardItemSource(
             model,
-            () => PinnedClipboardRebuilder.Build(model, imageReference, storageItems));
+            () => PinnedClipboardRebuilder.BuildDeferred(model, () => _store.ReadImageAsync(model.Id)));
 
-        return new ClipboardItemData(source, model.DataType, model.ContentSignature);
+        return Task.FromResult(new ClipboardItemData(source, model.DataType, model.ContentSignature) { CapturedAt = model.PinnedAt });
     }
+
+    private void Publish() => Volatile.Write(ref _snapshot,
+        _pinned.OrderByDescending(item => item.CapturedAt).ToArray());
 }

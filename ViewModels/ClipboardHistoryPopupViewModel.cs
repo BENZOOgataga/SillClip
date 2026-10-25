@@ -13,9 +13,11 @@ namespace WindowSill.ClipboardHistory.ViewModels;
 /// ViewModel for the compact mode clipboard history popup.
 /// Manages the collection of clipboard items displayed within the popup.
 /// </summary>
-internal sealed partial class ClipboardHistoryPopupViewModel : ObservableObject
+internal sealed partial class ClipboardHistoryPopupViewModel : ObservableObject, IDisposable
 {
     private readonly PersistentClipboardService _persistentService;
+    private bool _filterQueued;
+    private bool _disposed;
 
     public ClipboardHistoryPopupViewModel(PersistentClipboardService persistentService)
     {
@@ -93,7 +95,15 @@ internal sealed partial class ClipboardHistoryPopupViewModel : ObservableObject
             }
         }
 
-        RefreshFilter();
+        if (!_filterQueued && !_disposed)
+        {
+            _filterQueued = true;
+            Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread().TryEnqueue(() =>
+            {
+                _filterQueued = false;
+                if (!_disposed) RefreshFilter();
+            });
+        }
     }
 
     private void Item_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -109,5 +119,15 @@ internal sealed partial class ClipboardHistoryPopupViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(EmptyClipboardIndicatorVisibility));
         OnPropertyChanged(nameof(NoSearchResultsVisibility));
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        foreach (var item in AllItems) item.PropertyChanged -= Item_PropertyChanged;
+        AllItems.CollectionChanged -= AllItems_CollectionChanged;
+        Items.CollectionChanged -= Items_CollectionChanged;
+        Items.Clear();
+        AllItems.Clear();
     }
 }

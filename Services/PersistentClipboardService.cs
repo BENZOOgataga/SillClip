@@ -1,170 +1,142 @@
 using System.ComponentModel.Composition;
-using Windows.Storage;
-using Windows.Storage.Streams;
+using Microsoft.Extensions.Logging;
 using WindowSill.API;
 using WindowSill.ClipboardHistory.Core;
 
 namespace WindowSill.ClipboardHistory.Services;
 
-/// <summary>
-/// Owns the DPAPI-encrypted clipboard archive used after Windows evicts an item.
-/// </summary>
 [Export(typeof(PersistentClipboardService))]
 internal sealed class PersistentClipboardService
 {
     private readonly PinnedClipboardStore _store;
-    private readonly DisposableSemaphore _semaphore = new();
-    private readonly List<ClipboardItemData> _items = [];
-    private readonly Dictionary<string, ClipboardItemData> _itemsBySignature = new(StringComparer.Ordinal);
+    private readonly SemaphoreSlim _gate = new(1, 1);
+    private readonly Dictionary<string, ClipboardItemData> _items = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, DateTimeOffset> _deleted = new(StringComparer.Ordinal);
+    private readonly ILogger _logger;
+    private readonly string _dataFolder;
+    private ClipboardItemData[] _snapshot = [];
+    private DateTimeOffset _clearedAt;
     private bool _loaded;
 
     [ImportingConstructor]
     public PersistentClipboardService(IPluginInfo pluginInfo)
     {
-        _store = new PinnedClipboardStore(pluginInfo.GetPluginDataFolder(), "History");
+        _logger = this.Log();
+        _dataFolder = ClipboardDataMigration.ForkFolder(pluginInfo.GetPluginDataFolder());
+        _store = new PinnedClipboardStore(_dataFolder, "History");
     }
 
     public event EventHandler? HistoryChanged;
-
-    public IReadOnlyList<ClipboardItemData> GetItems()
-        => [.. _items.OrderByDescending(GetCapturedAt)];
+    public IReadOnlyList<ClipboardItemData> GetItems() => Volatile.Read(ref _snapshot);
 
     public async Task LoadAsync(CancellationToken cancellationToken = default)
     {
-        using IDisposable _ = await _semaphore.WaitAsync(cancellationToken);
-        if (_loaded)
+        await _gate.WaitAsync(cancellationToken);
+        try
         {
-            return;
+            if (_loaded) return;
+            await Task.Run(() => ClipboardDataMigration.Prepare(_dataFolder), cancellationToken);
+            foreach (PinnedClipboardItem model in await _store.LoadAllAsync(cancellationToken))
+            {
+                try
+                {
+                    model.ContentSignature = ClipboardSignature.Compute(model);
+                    _items[model.ContentSignature] = CreateData(model);
+                }
+                catch (Exception ex) { _logger.LogWarning(ex, "An archived item could not be restored."); }
+            }
+            _loaded = true;
+            Publish();
         }
-
-        foreach (PinnedClipboardItem model in await _store.LoadAllAsync(cancellationToken))
-        {
-            ClipboardItemData data = await CreateDataAsync(model);
-            _items.Add(data);
-            _itemsBySignature[model.ContentSignature] = data;
-        }
-
-        _loaded = true;
+        finally { _gate.Release(); }
     }
 
-    public async Task CaptureAsync(
-        IReadOnlyList<ClipboardItemData> liveItems,
-        int maximumItemCount,
-        IReadOnlySet<string> pinnedSignatures,
-        CancellationToken cancellationToken = default)
+    public async Task CaptureAsync(IReadOnlyList<ClipboardItemData> liveItems, int maximumItemCount,
+        IReadOnlySet<string> pinnedSignatures, CancellationToken cancellationToken = default)
     {
-        using (await _semaphore.WaitAsync(cancellationToken))
+        await _gate.WaitAsync(cancellationToken);
+        try
         {
-            foreach (ClipboardItemData item in liveItems.Reverse())
+            foreach (ClipboardItemData item in liveItems.OrderBy(item => item.CapturedAt))
             {
-                if (string.IsNullOrEmpty(item.ContentSignature)
-                    || _itemsBySignature.ContainsKey(item.ContentSignature))
-                {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (string.IsNullOrEmpty(item.ContentSignature) || item.CapturedAt <= _clearedAt
+                    || (_deleted.TryGetValue(item.ContentSignature, out var deletedAt) && item.CapturedAt <= deletedAt))
                     continue;
-                }
-
-                PinnedClipboardItem model = await ClipboardContentCapturer.CaptureAsync(item.Source.Data, item.DataType);
-                if (string.IsNullOrEmpty(model.ContentSignature))
+                try
                 {
-                    continue;
+                    if (_items.TryGetValue(item.ContentSignature, out var existing))
+                    {
+                        if (item.CapturedAt <= existing.CapturedAt) continue;
+                        var existingModel = ((PersistentClipboardItemSource)existing.Source).Model;
+                        existingModel.PinnedAt = item.CapturedAt;
+                        await _store.SaveAsync(existingModel, cancellationToken);
+                        _items[item.ContentSignature] = existing with { CapturedAt = item.CapturedAt };
+                        continue;
+                    }
+                    PinnedClipboardItem model = await ClipboardContentCapturer.CaptureAsync(item.Source.Data, item.DataType);
+                    model.PinnedAt = item.CapturedAt;
+                    if (string.IsNullOrEmpty(model.ContentSignature)) continue;
+                    await _store.SaveAsync(model, cancellationToken);
+                    model.ImageBytes = null;
+                    _items[model.ContentSignature] = CreateData(model);
                 }
-
-                await _store.SaveAsync(model, cancellationToken);
-                ClipboardItemData storedData = await CreateDataAsync(model);
-                _items.Add(storedData);
-                _itemsBySignature[model.ContentSignature] = storedData;
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+                catch (Exception ex) { _logger.LogWarning(ex, "A clipboard item could not be archived. Other items remain available."); }
             }
 
-            ClipboardItemData[] unpinnedItems = _items
-                .Where(item => !pinnedSignatures.Contains(item.ContentSignature))
-                .OrderByDescending(GetCapturedAt)
-                .ToArray();
-
-            if (maximumItemCount > 0 && unpinnedItems.Length > maximumItemCount)
+            var models = _items.Values.Select(item => ((PersistentClipboardItemSource)item.Source).Model);
+            foreach (var expired in HistoryRetention.Expired(models, maximumItemCount, pinnedSignatures))
             {
-                ClipboardItemData[] expired = unpinnedItems
-                    .Skip(maximumItemCount)
-                    .ToArray();
-
-                foreach (ClipboardItemData item in expired)
+                try
                 {
-                    await DeleteCoreAsync(item, cancellationToken);
+                    await _store.DeleteAsync(expired.Id, cancellationToken);
+                    _items.Remove(expired.ContentSignature);
                 }
+                catch (IOException ex) { _logger.LogWarning(ex, "An expired archive file could not be removed."); }
             }
+            Publish();
         }
+        finally { _gate.Release(); }
     }
 
     public async Task DeleteBySignatureAsync(string signature, CancellationToken cancellationToken = default)
     {
-        bool changed = false;
-        using (await _semaphore.WaitAsync(cancellationToken))
+        await _gate.WaitAsync(cancellationToken);
+        try
         {
-            if (_itemsBySignature.TryGetValue(signature, out ClipboardItemData? item))
+            _deleted[signature] = DateTimeOffset.UtcNow;
+            if (_items.TryGetValue(signature, out var item))
             {
-                await DeleteCoreAsync(item, cancellationToken);
-                changed = true;
+                await _store.DeleteAsync(item.Source.Id, cancellationToken);
+                _items.Remove(signature);
+                Publish();
             }
         }
-
-        if (changed)
-        {
-            HistoryChanged?.Invoke(this, EventArgs.Empty);
-        }
-    }
-
-    public async Task DeleteAsync(string id, CancellationToken cancellationToken = default)
-    {
-        bool changed = false;
-        using (await _semaphore.WaitAsync(cancellationToken))
-        {
-            ClipboardItemData? item = _items.FirstOrDefault(i => i.Source.Id == id);
-            if (item is not null)
-            {
-                await DeleteCoreAsync(item, cancellationToken);
-                changed = true;
-            }
-        }
-
-        if (changed)
-        {
-            HistoryChanged?.Invoke(this, EventArgs.Empty);
-        }
+        finally { _gate.Release(); }
+        HistoryChanged?.Invoke(this, EventArgs.Empty);
     }
 
     public async Task ClearAsync(CancellationToken cancellationToken = default)
     {
-        using (await _semaphore.WaitAsync(cancellationToken))
+        await _gate.WaitAsync(cancellationToken);
+        try
         {
+            _clearedAt = DateTimeOffset.UtcNow;
             await _store.DeleteAllAsync(cancellationToken);
             _items.Clear();
-            _itemsBySignature.Clear();
+            Publish();
         }
-
+        finally { _gate.Release(); }
         HistoryChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    private async Task DeleteCoreAsync(ClipboardItemData item, CancellationToken cancellationToken)
+    private ClipboardItemData CreateData(PinnedClipboardItem model)
     {
-        _items.Remove(item);
-        _itemsBySignature.Remove(item.ContentSignature);
-        await _store.DeleteAsync(item.Source.Id, cancellationToken);
+        var source = new PersistentClipboardItemSource(model,
+            () => PinnedClipboardRebuilder.BuildDeferred(model, () => _store.ReadImageAsync(model.Id)));
+        return new ClipboardItemData(source, model.DataType, model.ContentSignature) { CapturedAt = model.PinnedAt };
     }
 
-    private async Task<ClipboardItemData> CreateDataAsync(PinnedClipboardItem model)
-    {
-        RandomAccessStreamReference? imageReference =
-            await PinnedClipboardRebuilder.CreateImageReferenceAsync(model.ImageBytes);
-        IReadOnlyList<IStorageItem>? storageItems =
-            await PinnedClipboardRebuilder.ResolveStorageItemsAsync(model.FilePaths);
-
-        var source = new PersistentClipboardItemSource(
-            model,
-            () => PinnedClipboardRebuilder.Build(model, imageReference, storageItems),
-            id => DeleteAsync(id).Forget());
-
-        return new ClipboardItemData(source, model.DataType, model.ContentSignature);
-    }
-
-    private static DateTimeOffset GetCapturedAt(ClipboardItemData item)
-        => ((PersistentClipboardItemSource)item.Source).Model.PinnedAt;
+    private void Publish() => Volatile.Write(ref _snapshot, _items.Values.OrderByDescending(item => item.CapturedAt).ToArray());
 }

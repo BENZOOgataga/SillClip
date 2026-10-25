@@ -9,7 +9,7 @@
     <LangVersion>preview</LangVersion>
     <Platforms>AnyCPU</Platforms>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
-    <DefaultItemExcludes>$(DefaultItemExcludes);artifacts\**</DefaultItemExcludes>
+    <DefaultItemExcludes>$(DefaultItemExcludes);artifacts\**;tests\**</DefaultItemExcludes>
 
     <!-- Enable Central Package Management -->
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>

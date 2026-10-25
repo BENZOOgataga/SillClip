@@ -10,6 +10,8 @@ namespace WindowSill.ClipboardHistory.ViewModels;
 internal sealed partial class HtmlItemViewModel : ClipboardHistoryItemViewModelBase
 {
     private readonly ILogger _logger;
+    private readonly ISettingsProvider _settingsProvider;
+    protected override DetectedClipboardDataType DetectedDataType => DetectedClipboardDataType.Html;
 
     /// <summary>
     /// Gets or sets the truncated display text shown in the list item.
@@ -23,10 +25,11 @@ internal sealed partial class HtmlItemViewModel : ClipboardHistoryItemViewModelB
     [ObservableProperty]
     public partial string PreviewText { get; set; } = string.Empty;
 
-    internal HtmlItemViewModel(IProcessInteractionService processInteractionService, IClipboardItemSource source)
+    internal HtmlItemViewModel(ISettingsProvider settingsProvider, IProcessInteractionService processInteractionService, IClipboardItemSource source)
         : base(processInteractionService, source)
     {
         _logger = this.Log();
+        _settingsProvider = settingsProvider;
 
         InitializeAsync().Forget();
     }
@@ -48,6 +51,7 @@ internal sealed partial class HtmlItemViewModel : ClipboardHistoryItemViewModelB
                 text = await Data.GetHtmlFormatAsync();
             }
 
+            text = ClipboardPrivacy.Protect(text, _settingsProvider.GetSetting(Settings.Settings.HidePasswords));
             DisplayText = text
                 .Substring(0, Math.Min(text.Length, 256))
                 .Trim()

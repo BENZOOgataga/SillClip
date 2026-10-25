@@ -8,17 +8,13 @@ namespace WindowSill.ClipboardHistory.Core;
 internal sealed class PersistentClipboardItemSource : IClipboardItemSource
 {
     private readonly Func<DataPackage> _rebuild;
-    private readonly Action<string> _delete;
 
     internal PersistentClipboardItemSource(
         PinnedClipboardItem model,
-        Func<DataPackage> rebuild,
-        Action<string> delete)
+        Func<DataPackage> rebuild)
     {
         Model = model;
         _rebuild = rebuild;
-        _delete = delete;
-        Data = rebuild().GetView();
     }
 
     internal PinnedClipboardItem Model { get; }
@@ -27,9 +23,9 @@ internal sealed class PersistentClipboardItemSource : IClipboardItemSource
 
     public bool IsPinned => false;
 
-    public DataPackageView Data { get; }
+    public DataPackageView Data => _rebuild().GetView();
 
     public void SetAsClipboardContent() => Clipboard.SetContent(_rebuild());
 
-    public void DeleteFromHistory() => _delete(Model.Id);
+    public void DeleteFromHistory() { } // The view model awaits archive deletion by signature.
 }

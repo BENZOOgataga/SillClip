@@ -3,6 +3,7 @@ using CommunityToolkit.WinUI.Helpers;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.ApplicationModel.DataTransfer;
+using Windows.Graphics.Imaging;
 using Windows.Storage.Streams;
 using WindowSill.API;
 
@@ -10,33 +11,38 @@ namespace WindowSill.ClipboardHistory.Utils;
 
 internal static partial class DataHelper
 {
-    internal static Uri GetFaviconGoogleUri(string url, int size)
+    private static readonly SemaphoreSlim BitmapGate = new(2, 2);
+    internal static async Task<(BitmapImage? Bitmap, uint Width, uint Height)> GetBitmapAsync(DataPackageView dataPackageView)
     {
-        string faviconUrl = string.Format("https://www.google.com/s2/favicons?domain={0}&sz={1}", Uri.EscapeDataString(url), size);
-        return new Uri(faviconUrl);
-    }
-
-    internal static async Task<BitmapImage?> GetBitmapAsync(DataPackageView dataPackageView)
-    {
+        await BitmapGate.WaitAsync();
         try
         {
             RandomAccessStreamReference randomAccessStreamReference = await dataPackageView.GetBitmapAsync();
             using IRandomAccessStreamWithContentType randomAccessStreamWithContentType = await randomAccessStreamReference.OpenReadAsync();
-            var bitmap = new BitmapImage();
+            var decoder = await BitmapDecoder.CreateAsync(randomAccessStreamWithContentType);
+            uint width = decoder.PixelWidth;
+            uint height = decoder.PixelHeight;
+            double scale = Math.Min(1, 256.0 / Math.Max(width, height));
+            randomAccessStreamWithContentType.Seek(0);
+            var bitmap = new BitmapImage
+            {
+                DecodePixelType = DecodePixelType.Physical,
+                DecodePixelWidth = Math.Max(1, (int)(width * scale)),
+                DecodePixelHeight = Math.Max(1, (int)(height * scale))
+            };
             await bitmap.SetSourceAsync(randomAccessStreamWithContentType);
-            bitmap.DecodePixelType = DecodePixelType.Physical;
-            bitmap.DecodePixelWidth = bitmap.PixelWidth;
-            return bitmap;
+            return (bitmap, width, height);
         }
         catch (COMException)
         {
-            return null;
+            return (null, 0, 0);
         }
         catch (Exception ex)
         {
             typeof(DataHelper).Log().LogError(ex, "Error while retrieving bitmap from data package view.");
-            return null;
+            return (null, 0, 0);
         }
+        finally { BitmapGate.Release(); }
     }
 
     internal static (SolidColorBrush background, SolidColorBrush foreground) GetBackgroundAndForegroundBrushes(string colorString)

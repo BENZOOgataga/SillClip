@@ -1,5 +1,6 @@
 using System.ComponentModel.Composition;
 using System.Runtime.InteropServices;
+using WindowSill.ClipboardHistory.Core;
 
 namespace WindowSill.ClipboardHistory.Services;
 
@@ -26,9 +27,7 @@ internal sealed class WinVShortcutService : IDisposable
 
     private readonly LowLevelKeyboardProc _hookCallback;
     private nint _hookHandle;
-    private bool _vKeyDown;
-    private bool _suppressVKeyUp;
-    private bool _openRequested;
+    private readonly WinVShortcutState _shortcutState = new();
 
     [ImportingConstructor]
     public WinVShortcutService()
@@ -59,9 +58,7 @@ internal sealed class WinVShortcutService : IDisposable
             _hookHandle = nint.Zero;
         }
 
-        _vKeyDown = false;
-        _suppressVKeyUp = false;
-        _openRequested = false;
+        _shortcutState.Reset();
     }
 
     public void Dispose()
@@ -80,50 +77,12 @@ internal sealed class WinVShortcutService : IDisposable
                 bool isKeyDown = keyboardMessage is WmKeyDown or WmSysKeyDown;
                 bool isKeyUp = keyboardMessage is WmKeyUp or WmSysKeyUp;
 
-                if (isKeyUp && _openRequested
-                    && keyboardData.VirtualKey is VkLeftWindows or VkRightWindows)
-                {
-                    int otherWindowsKey = keyboardData.VirtualKey == VkLeftWindows
-                        ? VkRightWindows : VkLeftWindows;
-                    if (!IsKeyDown(otherWindowsKey))
-                    {
-                        _openRequested = false;
-                        ShortcutPressed?.Invoke(this, EventArgs.Empty);
-                    }
-                }
-
-                if (keyboardData.VirtualKey == VkV)
-                {
-                    if (isKeyDown && _suppressVKeyUp)
-                    {
-                        return new nint(1);
-                    }
-
-                    if (isKeyDown && IsWindowsKeyDown() && !IsAnotherModifierDown())
-                    {
-                        _suppressVKeyUp = true;
-                        if (!_vKeyDown)
-                        {
-                            _vKeyDown = true;
-                            // Without this neutral chord, the Shell sees a bare Win press
-                            // and opens Start when Win is released. PowerToys uses 0xFF too.
-                            SendMenuMask();
-                            _openRequested = true;
-                        }
-
-                        return new nint(1);
-                    }
-
-                    if (isKeyUp)
-                    {
-                        _vKeyDown = false;
-                        if (_suppressVKeyUp)
-                        {
-                            _suppressVKeyUp = false;
-                            return new nint(1);
-                        }
-                    }
-                }
+                int otherWindowsKey = keyboardData.VirtualKey == VkLeftWindows ? VkRightWindows : VkLeftWindows;
+                var decision = _shortcutState.Process(keyboardData.VirtualKey, isKeyDown, isKeyUp,
+                    IsWindowsKeyDown(), IsAnotherModifierDown(), IsKeyDown(otherWindowsKey));
+                if (decision.MaskMenu) SendMenuMask();
+                if (decision.Open) ShortcutPressed?.Invoke(this, EventArgs.Empty);
+                if (decision.Suppress) return new nint(1);
             }
         }
         catch

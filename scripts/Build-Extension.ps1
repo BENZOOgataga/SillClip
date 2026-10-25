@@ -21,7 +21,9 @@ if ($LASTEXITCODE -ne 0) {
     throw "dotnet pack failed with exit code $LASTEXITCODE."
 }
 
-$package = Get-ChildItem -LiteralPath $packageDirectory -Filter "WindowSill.ClipboardHistory.*.nupkg" |
+[xml]$project = Get-Content -Raw -LiteralPath $projectPath
+$packageId = $project.Project.PropertyGroup.PackageId | Where-Object { $_ } | Select-Object -First 1
+$package = Get-ChildItem -LiteralPath $packageDirectory -Filter "$packageId.*.nupkg" |
     Sort-Object LastWriteTimeUtc -Descending |
     Select-Object -First 1
 

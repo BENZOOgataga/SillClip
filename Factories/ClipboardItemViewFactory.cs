@@ -17,6 +17,7 @@ internal sealed class ClipboardItemViewFactory
     private readonly IProcessInteractionService _processInteractionService;
     private readonly PinnedClipboardService _pinnedService;
     private readonly PersistentClipboardService _persistentService;
+    private readonly ClipboardHistoryDataService _clipboardDataService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ClipboardItemViewFactory"/> class.
@@ -30,13 +31,15 @@ internal sealed class ClipboardItemViewFactory
         ISettingsProvider settingsProvider,
         IProcessInteractionService processInteractionService,
         PinnedClipboardService pinnedService,
-        PersistentClipboardService persistentService)
+        PersistentClipboardService persistentService,
+        ClipboardHistoryDataService clipboardDataService)
     {
         _pluginInfo = pluginInfo;
         _settingsProvider = settingsProvider;
         _processInteractionService = processInteractionService;
         _pinnedService = pinnedService;
         _persistentService = persistentService;
+        _clipboardDataService = clipboardDataService;
     }
 
     /// <summary>
@@ -50,8 +53,8 @@ internal sealed class ClipboardItemViewFactory
         ClipboardHistoryItemViewModelBase viewModel = itemData.DataType switch
         {
             DetectedClipboardDataType.Text => new TextItemViewModel(_settingsProvider, _processInteractionService, itemData.Source),
-            DetectedClipboardDataType.Html => new HtmlItemViewModel(_processInteractionService, itemData.Source),
-            DetectedClipboardDataType.Rtf => new RtfItemViewModel(_processInteractionService, itemData.Source),
+            DetectedClipboardDataType.Html => new HtmlItemViewModel(_settingsProvider, _processInteractionService, itemData.Source),
+            DetectedClipboardDataType.Rtf => new RtfItemViewModel(_settingsProvider, _processInteractionService, itemData.Source),
             DetectedClipboardDataType.Image => new ImageItemViewModel(_processInteractionService, itemData.Source),
             DetectedClipboardDataType.Uri => new UriItemViewModel(_processInteractionService, itemData.Source),
             DetectedClipboardDataType.ApplicationLink => new ApplicationLinkItemViewModel(_processInteractionService, itemData.Source),
@@ -62,7 +65,8 @@ internal sealed class ClipboardItemViewFactory
         };
 
         viewModel.ConfigurePinning(itemData, _pinnedService);
-        viewModel.ConfigurePersistence(itemData, _persistentService);
+        viewModel.ConfigurePersistence(itemData, _persistentService, _clipboardDataService);
+        viewModel.ConfigurePrivacy(_settingsProvider.GetSetting(Settings.Settings.HidePasswords));
         return viewModel;
     }
 
@@ -88,7 +92,8 @@ internal sealed class ClipboardItemViewFactory
         };
 
         result.ViewModel.ConfigurePinning(itemData, _pinnedService);
-        result.ViewModel.ConfigurePersistence(itemData, _persistentService);
+        result.ViewModel.ConfigurePersistence(itemData, _persistentService, _clipboardDataService);
+        result.ViewModel.ConfigurePrivacy(_settingsProvider.GetSetting(Settings.Settings.HidePasswords));
         return result;
     }
 
@@ -112,7 +117,7 @@ internal sealed class ClipboardItemViewFactory
 
     private (ClipboardHistoryItemViewModelBase, SillListViewItem) CreateHtmlView(IClipboardItemSource source)
     {
-        var viewModel = new HtmlItemViewModel(_processInteractionService, source);
+        var viewModel = new HtmlItemViewModel(_settingsProvider, _processInteractionService, source);
         SillListViewButtonItem view = CreateButtonItem(viewModel);
         view.Content = new HtmlItemContentView(viewModel);
         view.PreviewFlyoutContent = new HtmlItemPreviewView(viewModel);
@@ -121,7 +126,7 @@ internal sealed class ClipboardItemViewFactory
 
     private (ClipboardHistoryItemViewModelBase, SillListViewItem) CreateRtfView(IClipboardItemSource source)
     {
-        var viewModel = new RtfItemViewModel(_processInteractionService, source);
+        var viewModel = new RtfItemViewModel(_settingsProvider, _processInteractionService, source);
         SillListViewButtonItem view = CreateButtonItem(viewModel);
         view.Content = new RtfItemContentView(viewModel);
         view.PreviewFlyoutContent = new RtfItemPreviewView(viewModel);

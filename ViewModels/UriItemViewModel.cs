@@ -3,7 +3,6 @@ using CommunityToolkit.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
-using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.System;
 using WindowSill.API;
@@ -18,6 +17,7 @@ namespace WindowSill.ClipboardHistory.ViewModels;
 internal sealed partial class UriItemViewModel : ClipboardHistoryItemViewModelBase
 {
     private readonly ILogger _logger;
+    protected override DetectedClipboardDataType DetectedDataType => DetectedClipboardDataType.Uri;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="UriItemViewModel"/> class.
@@ -40,12 +40,6 @@ internal sealed partial class UriItemViewModel : ClipboardHistoryItemViewModelBa
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(OpenInBrowserCommand))]
     public partial bool HasError { get; set; }
-
-    [ObservableProperty]
-    public partial BitmapImage? Favicon { get; set; }
-
-    [ObservableProperty]
-    public partial BitmapImage? LargerFavicon { get; set; }
 
     [RelayCommand(CanExecute = nameof(CanOpenInBrowser))]
     private async Task OpenInBrowserAsync()
@@ -75,9 +69,6 @@ internal sealed partial class UriItemViewModel : ClipboardHistoryItemViewModelBa
             {
                 Url = await Data.GetTextAsync();
             }
-
-            Favicon = new BitmapImage(DataHelper.GetFaviconGoogleUri(Url, 16));
-            LargerFavicon = new BitmapImage(DataHelper.GetFaviconGoogleUri(Url, 24));
 
             if (Data.Contains(StandardDataFormats.Html))
             {

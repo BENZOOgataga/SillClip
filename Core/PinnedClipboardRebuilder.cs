@@ -1,4 +1,6 @@
 using System.Runtime.InteropServices.WindowsRuntime;
+using Microsoft.Extensions.Logging;
+using WindowSill.API;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
 using Windows.Storage.Streams;
@@ -12,6 +14,39 @@ namespace WindowSill.ClipboardHistory.Core;
 /// </summary>
 internal static class PinnedClipboardRebuilder
 {
+    internal static DataPackage BuildDeferred(PinnedClipboardItem model, Func<Task<byte[]?>> readImage)
+    {
+        DataPackage package = Build(model, null, null);
+        if (model.HasImage)
+        {
+            package.SetDataProvider(StandardDataFormats.Bitmap, async request =>
+            {
+                var deferral = request.GetDeferral();
+                try
+                {
+                    var reference = await CreateImageReferenceAsync(await readImage());
+                    if (reference is not null) request.SetData(reference);
+                }
+                catch (Exception ex) { typeof(PinnedClipboardRebuilder).Log().LogWarning(ex, "An archived image is unavailable."); }
+                finally { deferral.Complete(); }
+            });
+        }
+        if (model.FilePaths is { Length: > 0 })
+        {
+            package.SetDataProvider(StandardDataFormats.StorageItems, async request =>
+            {
+                var deferral = request.GetDeferral();
+                try
+                {
+                    var items = await ResolveStorageItemsAsync(model.FilePaths);
+                    if (items is not null) request.SetData(items.ToArray());
+                }
+                catch (Exception ex) { typeof(PinnedClipboardRebuilder).Log().LogWarning(ex, "Archived files are unavailable."); }
+                finally { deferral.Complete(); }
+            });
+        }
+        return package;
+    }
     /// <summary>
     /// Creates a reusable image stream reference from raw image bytes, or <c>null</c> when
     /// there is no image payload.
@@ -137,6 +172,11 @@ internal static class PinnedClipboardRebuilder
                 break;
         }
 
+        if (!string.IsNullOrEmpty(model.Html)) package.SetHtmlFormat(model.Html);
+        if (!string.IsNullOrEmpty(model.Rtf)) package.SetRtf(model.Rtf);
+        if (model.ApplicationLink is not null && Uri.TryCreate(model.ApplicationLink, UriKind.Absolute, out var appLink))
+            package.SetApplicationLink(appLink);
+        if (model.UserActivity is not null) package.SetData(StandardDataFormats.UserActivityJsonArray, model.UserActivity);
         return package;
     }
 }

@@ -1,3 +1,17 @@
+# 0.10.1-unlimited.1
+- Removed network requests for link icons.
+- Applied password masking to previews and search indexing.
+- Fixed retention ordering when Windows history is imported repeatedly.
+- Included rich text payloads in duplicate detection.
+- Deferred archived image reads and limited thumbnail decoding.
+- Kept live clipboard access available when archive loading fails.
+- Added popup dragging, saved placement, and monitor bounds checks.
+- Set explicit search icon sizes.
+- Isolated the fork from official marketplace updates with a separate package ID.
+- Migrated encrypted history and pins without overwriting existing files.
+- Added semantic version checks and a six-hour update check interval.
+- Added regression tests and a Windows build workflow.
+
 # 0.10.0-unlimited.1
 - Set the clipboard popup to 360 by 400 logical pixels.
 - Fixed Start opening when the Windows key is released after Win+V.

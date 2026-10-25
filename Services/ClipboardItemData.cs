@@ -9,4 +9,7 @@ namespace WindowSill.ClipboardHistory.Services;
 internal sealed record ClipboardItemData(
     IClipboardItemSource Source,
     DetectedClipboardDataType DataType,
-    string ContentSignature);
+    string ContentSignature)
+{
+    internal DateTimeOffset CapturedAt { get; init; } = DateTimeOffset.UtcNow;
+}

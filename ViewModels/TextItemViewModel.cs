@@ -63,17 +63,11 @@ internal sealed partial class TextItemViewModel : ClipboardHistoryItemViewModelB
                 }
 
                 text ??= string.Empty;
+                text = ClipboardPrivacy.Protect(text, _settingsProvider.GetSetting(Settings.Settings.HidePasswords));
 
                 await ThreadHelper.RunOnUIThreadAsync(() =>
                 {
-                    if (_settingsProvider.GetSetting(Settings.Settings.HidePasswords)
-                        && IsPassword(text))
-                    {
-                        DisplayText = new string('•', text.Length);
-                    }
-                    else
-                    {
-                        DisplayText
+                    DisplayText
                             = text
                             .Substring(0, Math.Min(text.Length, 256))
                             .Trim()
@@ -81,8 +75,6 @@ internal sealed partial class TextItemViewModel : ClipboardHistoryItemViewModelB
                             .Replace("\n\r", "⏎")
                             .Replace('\r', '⏎')
                             .Replace('\n', '⏎');
-                    }
-
                     PreviewText = text.Substring(0, Math.Min(text.Length, 1000));
                     if (text.Length > 1000)
                     {
@@ -97,45 +89,4 @@ internal sealed partial class TextItemViewModel : ClipboardHistoryItemViewModelB
         });
     }
 
-    private static bool IsPassword(string text)
-    {
-        if (!string.IsNullOrEmpty(text) && text.Length >= 8 && text.Length <= 128)
-        {
-            bool hasUpper = false;
-            bool hasLower = false;
-            bool hasDigit = false;
-            bool hasSpecial = false;
-
-            // Allowed characters
-            string specials = "#?!@$%^&*-+";
-
-            foreach (char c in text)
-            {
-                if (char.IsUpper(c))
-                {
-                    hasUpper = true;
-                }
-                else if (char.IsLower(c))
-                {
-                    hasLower = true;
-                }
-                else if (char.IsDigit(c))
-                {
-                    hasDigit = true;
-                }
-                else if (specials.IndexOf(c) >= 0)
-                {
-                    hasSpecial = true;
-                }
-                else
-                {
-                    return false; // invalid character found
-                }
-            }
-
-            return hasUpper && hasLower && hasDigit && hasSpecial;
-        }
-
-        return false;
-    }
 }

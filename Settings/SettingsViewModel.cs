@@ -9,13 +9,27 @@ internal sealed partial class SettingsViewModel : ObservableObject
 {
     private readonly ISettingsProvider _settingsProvider;
     private readonly GitHubUpdateService _updateService;
+    private bool _attached;
 
     public SettingsViewModel(ISettingsProvider settingsProvider, GitHubUpdateService updateService)
     {
         _settingsProvider = settingsProvider;
         _updateService = updateService;
+    }
+
+    internal void Attach()
+    {
+        if (_attached) return;
+        _attached = true;
         Clipboard.HistoryEnabledChanged += Clipboard_HistoryEnabledChanged;
         _updateService.StatusChanged += UpdateService_StatusChanged;
+    }
+
+    internal void Detach()
+    {
+        _attached = false;
+        Clipboard.HistoryEnabledChanged -= Clipboard_HistoryEnabledChanged;
+        _updateService.StatusChanged -= UpdateService_StatusChanged;
     }
 
     public int MaximumHistoryCount
@@ -91,6 +105,7 @@ internal sealed partial class SettingsViewModel : ObservableObject
     public bool IsUpdateActionEnabled => !_updateService.IsChecking;
 
     internal Uri? LatestReleaseUri => _updateService.LatestReleaseUri;
+    internal bool HasNewerRelease => _updateService.IsUpdateAvailable;
 
     internal Task CheckForUpdatesAsync() => _updateService.CheckAsync(force: true);
 

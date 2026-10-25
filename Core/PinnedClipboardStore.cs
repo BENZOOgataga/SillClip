@@ -101,22 +101,16 @@ internal sealed class PinnedClipboardStore
         using IDisposable _ = await _semaphore.WaitAsync(cancellationToken);
         try
         {
-            byte[] encrypted = await File.ReadAllBytesAsync(filePath, cancellationToken);
+            byte[] encrypted = await File.ReadAllBytesAsync(filePath, cancellationToken).ConfigureAwait(false);
             byte[] plaintext = ProtectedData.Unprotect(encrypted, null, DataProtectionScope.CurrentUser);
             string json = Encoding.UTF8.GetString(plaintext);
             PinnedClipboardItem? item = JsonSerializer.Deserialize<PinnedClipboardItem>(json, JsonSerializerOptions.Web);
 
-            if (item is not null && item.HasImage)
-            {
-                string imagePath = GetImagePath(item.Id);
-                if (File.Exists(imagePath))
-                {
-                    byte[] encryptedImage = await File.ReadAllBytesAsync(imagePath, cancellationToken);
-                    item.ImageBytes = ProtectedData.Unprotect(encryptedImage, null, DataProtectionScope.CurrentUser);
-                }
-            }
-
             return item;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception)
         {
@@ -126,7 +120,7 @@ internal sealed class PinnedClipboardStore
 
     private static async Task WriteEncryptedAsync(string filePath, byte[] plaintext, CancellationToken cancellationToken)
     {
-        byte[] encrypted = ProtectedData.Protect(plaintext, null, DataProtectionScope.CurrentUser);
+        byte[] encrypted = await Task.Run(() => ProtectedData.Protect(plaintext, null, DataProtectionScope.CurrentUser));
         string tempPath = filePath + ".tmp";
         await File.WriteAllBytesAsync(tempPath, encrypted, cancellationToken);
         File.Move(tempPath, filePath, overwrite: true);
@@ -135,6 +129,12 @@ internal sealed class PinnedClipboardStore
     private string GetDataPath(string id) => Path.Combine(_dataFolder, SafeFileName(id) + DataExtension);
 
     private string GetImagePath(string id) => Path.Combine(_dataFolder, SafeFileName(id) + ImageExtension);
+
+    internal async Task<byte[]?> ReadImageAsync(string id)
+    {
+        byte[] encrypted = await File.ReadAllBytesAsync(GetImagePath(id)).ConfigureAwait(false);
+        return ProtectedData.Unprotect(encrypted, null, DataProtectionScope.CurrentUser);
+    }
 
     private static string SafeFileName(string id)
     {

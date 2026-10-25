@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsTestProject>true</IsTestProject>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../Core/WinVShortcutState.cs" Link="WinVShortcutState.cs" />
+    <PackageReference Include="NuGet.Versioning" />
+    <Compile Include="../../Core/ReleaseVersion.cs" Link="ReleaseVersion.cs" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
+    <Compile Include="../../Core/ClipboardPrivacy.cs" Link="ClipboardPrivacy.cs" />
+    <Compile Include="../../Core/ClipboardSignature.cs" Link="ClipboardSignature.cs" />
+    <Compile Include="../../Core/HistoryRetention.cs" Link="HistoryRetention.cs" />
+    <Compile Include="../../Core/PinnedClipboardItem.cs" Link="PinnedClipboardItem.cs" />
+    <Compile Include="../../Core/PopupPlacement.cs" Link="PopupPlacement.cs" />
+    <Compile Include="../../Core/ClipboardDataMigration.cs" Link="ClipboardDataMigration.cs" />
+    <Compile Include="../../DetectedClipboardDataType.cs" Link="DetectedClipboardDataType.cs" />
+  </ItemGroup>
+</Project>

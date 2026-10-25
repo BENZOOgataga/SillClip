@@ -124,7 +124,7 @@
     <value>Supprimer</value>
   </data>
   <data name="DisplayName" xml:space="preserve">
-    <value>Historique du presse-papiers</value>
+    <value>Presse-papiers illimité</value>
   </data>
   <data name="EmptyClipboard.TextProperty" xml:space="preserve">
     <value>Le presse-papiers est vide.</value>
@@ -151,39 +151,39 @@
     <value>Format non pris en charge</value>
   </data>
   <data name="LinkError" xml:space="preserve">
-    <value>Unable to load link</value>
+    <value>Impossible de charger le lien</value>
   </data>
   <data name="ClipboardFileBaseName" xml:space="preserve">
-    <value>Clipboard</value>
+    <value>Presse-papiers</value>
   </data>
   <data name="SearchPlaceholder" xml:space="preserve">
     <value>Rechercher dans l'historique</value>
   </data>
   <data name="NoSearchResults" xml:space="preserve">
-    <value>Aucun element correspondant</value>
+    <value>Aucun élément correspondant</value>
   </data>
   <data name="SearchHistory" xml:space="preserve">
     <value>Rechercher dans l'historique du presse-papiers</value>
   </data>
   <data name="UpdateChecking" xml:space="preserve">
-    <value>Verification des releases GitHub...</value>
+    <value>Vérification des versions GitHub...</value>
   </data>
   <data name="UpdateFailed" xml:space="preserve">
-    <value>La verification des releases GitHub a echoue.</value>
+    <value>La vérification des versions GitHub a échoué.</value>
   </data>
   <data name="UpdateAvailable" xml:space="preserve">
     <value>La version {0} est disponible.</value>
   </data>
   <data name="UpdateCurrent" xml:space="preserve">
-    <value>Version actuelle : {0}. Les mises a jour sont verifiees automatiquement.</value>
+    <value>Version actuelle : {0}. Les mises à jour sont vérifiées automatiquement.</value>
   </data>
   <data name="UpdateNoRelease" xml:space="preserve">
-    <value>Aucune release GitHub n'a encore ete publiee.</value>
+    <value>Aucune version installable n'est disponible sur GitHub.</value>
   </data>
   <data name="OpenRelease" xml:space="preserve">
-    <value>Ouvrir la release</value>
+    <value>Ouvrir la page de la version</value>
   </data>
   <data name="CheckNow" xml:space="preserve">
-    <value>Verifier maintenant</value>
+    <value>Vérifier maintenant</value>
   </data>
 </root>

@@ -21,6 +21,7 @@ public abstract partial class ClipboardHistoryItemViewModelBase
 
     private PinnedClipboardService? _pinnedService;
     private PersistentClipboardService? _persistentService;
+    private ClipboardHistoryDataService? _clipboardDataService;
     private ClipboardItemData? _itemData;
 
     internal ClipboardHistoryItemViewModelBase(
@@ -33,14 +34,15 @@ public abstract partial class ClipboardHistoryItemViewModelBase
         _logger = this.Log();
         _processInteractionService = processInteractionService;
         _source = source;
-        Data = source.Data;
-        InitializeSearchTextAsync().Forget();
     }
 
-    public DataPackageView Data { get; }
+    public DataPackageView Data => _source.Data;
 
     [ObservableProperty]
     public partial string SearchText { get; private set; } = string.Empty;
+
+    internal void ConfigurePrivacy(bool hidePasswords)
+        => InitializeSearchTextAsync(hidePasswords).Forget();
 
     /// <summary>
     /// Gets whether the item this view model represents is pinned.
@@ -68,10 +70,12 @@ public abstract partial class ClipboardHistoryItemViewModelBase
         OnPropertyChanged(nameof(CanTogglePin));
     }
 
-    internal void ConfigurePersistence(ClipboardItemData itemData, PersistentClipboardService persistentService)
+    internal void ConfigurePersistence(ClipboardItemData itemData, PersistentClipboardService persistentService,
+        ClipboardHistoryDataService clipboardDataService)
     {
         _itemData = itemData;
         _persistentService = persistentService;
+        _clipboardDataService = clipboardDataService;
     }
 
     /// <summary>
@@ -121,7 +125,7 @@ public abstract partial class ClipboardHistoryItemViewModelBase
         return _source.Id.GetHashCode();
     }
 
-    private async Task InitializeSearchTextAsync()
+    private async Task InitializeSearchTextAsync(bool hidePasswords)
     {
         try
         {
@@ -129,7 +133,13 @@ public abstract partial class ClipboardHistoryItemViewModelBase
 
             if (Data.AvailableFormats.Contains(StandardDataFormats.Text))
             {
-                parts.Add(await Data.GetTextAsync());
+                string text = await Data.GetTextAsync();
+                if (hidePasswords && ClipboardPrivacy.LooksSensitive(text))
+                {
+                    await ThreadHelper.RunOnUIThreadAsync(() => SearchText = DetectedDataType.ToString());
+                    return;
+                }
+                parts.Add(text);
             }
 
             if (Data.AvailableFormats.Contains(StandardDataFormats.WebLink))
@@ -144,12 +154,13 @@ public abstract partial class ClipboardHistoryItemViewModelBase
                 parts.AddRange(storageItems.Select(item => item.Path));
             }
 
-            SearchText = string.Join('\n', parts.Where(part => !string.IsNullOrWhiteSpace(part)));
+            string searchText = string.Join('\n', parts.Where(part => !string.IsNullOrWhiteSpace(part)));
+            await ThreadHelper.RunOnUIThreadAsync(() => SearchText = searchText);
         }
         catch (Exception ex)
         {
             _logger.LogDebug(ex, "Failed to build the search index for clipboard item {ItemId}.", _source.Id);
-            SearchText = DetectedDataType.ToString();
+            await ThreadHelper.RunOnUIThreadAsync(() => SearchText = DetectedDataType.ToString());
         }
     }
 
@@ -196,7 +207,10 @@ public abstract partial class ClipboardHistoryItemViewModelBase
         if (_persistentService is not null && _itemData is not null)
         {
             await _persistentService.DeleteBySignatureAsync(_itemData.ContentSignature);
+            if (_clipboardDataService is not null)
+                await _clipboardDataService.DeleteBySignatureAsync(_itemData.ContentSignature);
         }
+        if (IsPinned && _pinnedService is not null) await _pinnedService.UnpinAsync(SourceId);
     }
 
     [RelayCommand]
