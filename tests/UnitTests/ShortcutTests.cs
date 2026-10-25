@@ -27,22 +27,22 @@ public sealed class ShortcutTests
     public void BothReleaseOrdersOpenExactlyOnce(bool releaseVFirst)
     {
         var state = new WinVShortcutState();
-        Assert.Equal((true, true, false), state.Process(0x56, true, false, true, false, false));
+        Assert.Equal((true, true, true), state.Process(0x56, true, false, true, false, false));
         Assert.Equal((true, false, false), state.Process(0x56, true, false, true, false, false));
         if (releaseVFirst) Assert.Equal((true, false, false), state.Process(0x56, false, true, true, false, false));
-        Assert.Equal((false, false, true), state.Process(0x5B, false, true, true, false, false));
+        Assert.Equal(default, state.Process(0x5B, false, true, true, false, false));
         if (!releaseVFirst) Assert.Equal((true, false, false), state.Process(0x56, false, true, false, false, false));
         Assert.Equal(default, state.Process(0x5B, false, true, false, false, false));
         Assert.Equal(default, state.Process(0x56, true, false, false, false, false));
     }
 
     [Fact]
-    public void ReleasingOnlyOneOfTwoWindowsKeysWaits()
+    public void WindowsKeyReleasesDoNotOpenThePopupAgain()
     {
         var state = new WinVShortcutState();
-        state.Process(0x56, true, false, true, false, true);
+        Assert.Equal((true, true, true), state.Process(0x56, true, false, true, false, true));
         Assert.Equal(default, state.Process(0x5B, false, true, true, false, true));
-        Assert.Equal((false, false, true), state.Process(0x5C, false, true, true, false, false));
+        Assert.Equal(default, state.Process(0x5C, false, true, true, false, false));
     }
 
     [Fact]

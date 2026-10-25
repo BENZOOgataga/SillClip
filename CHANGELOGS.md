@@ -1,3 +1,14 @@
+# 0.10.1
+- Added Paste and Copy to the context menu of bar items.
+- Placed the Win+V popup before its first visible frame, using caret geometry or an active-monitor fallback.
+- Removed saved popup placement and the delayed move after opening.
+- Added arrow-key selection, Enter to paste, Ctrl+F for search, and a close button.
+- Added multiline cards within the 360 by 400 logical pixel popup.
+- Guarded popup paste against changes to the target window and unavailable items.
+- Batched search-index refreshes.
+- Included the image preview and keyboard hook fixes from 0.10.1-unlimited.2.
+- Published a stable package for GitHub update checks.
+
 # 0.10.1-unlimited.2
 - Stopped reading native clipboard image content during XAML layout.
 - Moved thumbnail reads and decoding to background work.

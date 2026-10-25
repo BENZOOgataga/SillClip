@@ -33,7 +33,11 @@ internal sealed class LiveClipboardItemSource : IClipboardItemSource
     public DataPackageView Data => _data;
 
     /// <inheritdoc />
-    public void SetAsClipboardContent() => Clipboard.SetHistoryItemAsContent(_item);
+    public void SetAsClipboardContent()
+    {
+        if (Clipboard.SetHistoryItemAsContent(_item) != SetHistoryItemAsContentStatus.Success)
+            throw new InvalidOperationException("The Windows clipboard history entry is unavailable.");
+    }
 
     /// <inheritdoc />
     public void DeleteFromHistory() => Clipboard.DeleteItemFromHistory(_item);

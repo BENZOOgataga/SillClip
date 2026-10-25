@@ -18,6 +18,8 @@ jobs:
           dotnet-version: '10.0.x'
       - name: Run regression tests
         run: dotnet test tests/UnitTests/UnitTests.csproj -c Release
+      - name: Verify hidden native popup placement
+        run: dotnet run --project tests/NativePlacementProbe -c Release
       - name: Build extension package
         shell: pwsh
         run: ./scripts/Build-Extension.ps1

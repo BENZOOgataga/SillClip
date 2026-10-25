@@ -186,4 +186,11 @@
   <data name="CheckNow" xml:space="preserve">
     <value>Vérifier maintenant</value>
   </data>
+  <data name="ClipboardTitle" xml:space="preserve"><value>Presse-papiers</value></data>
+  <data name="Copy" xml:space="preserve"><value>Copier</value></data>
+  <data name="Paste" xml:space="preserve"><value>Coller</value></data>
+  <data name="Close" xml:space="preserve"><value>Fermer</value></data>
+  <data name="ClearAll" xml:space="preserve"><value>Tout effacer</value></data>
+  <data name="Pin" xml:space="preserve"><value>Épingler</value></data>
+  <data name="Unpin" xml:space="preserve"><value>Désépingler</value></data>
 </root>

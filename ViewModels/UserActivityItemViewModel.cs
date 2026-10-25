@@ -12,6 +12,7 @@ namespace WindowSill.ClipboardHistory.ViewModels;
 /// </summary>
 internal sealed partial class UserActivityItemViewModel : ClipboardHistoryItemViewModelBase
 {
+    protected override DetectedClipboardDataType DetectedDataType => DetectedClipboardDataType.UserActivity;
     private readonly ILogger _logger;
 
     /// <summary>

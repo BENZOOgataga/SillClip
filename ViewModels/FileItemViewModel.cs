@@ -17,6 +17,7 @@ namespace WindowSill.ClipboardHistory.ViewModels;
 /// </summary>
 internal sealed partial class FileItemViewModel : ClipboardHistoryItemViewModelBase
 {
+    protected override DetectedClipboardDataType DetectedDataType => DetectedClipboardDataType.File;
     private readonly ILogger _logger;
 
     /// <summary>

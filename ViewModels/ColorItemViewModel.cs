@@ -13,6 +13,7 @@ namespace WindowSill.ClipboardHistory.ViewModels;
 /// </summary>
 internal sealed partial class ColorItemViewModel : ClipboardHistoryItemViewModelBase
 {
+    protected override DetectedClipboardDataType DetectedDataType => DetectedClipboardDataType.Color;
     private readonly ILogger _logger;
 
     /// <summary>

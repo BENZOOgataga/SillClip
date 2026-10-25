@@ -2,7 +2,7 @@
     <PropertyGroup>
         <PackageId>WindowSill.ClipboardHistory.NoLimits</PackageId>
         <AssemblyName>WindowSill.ClipboardHistory</AssemblyName>
-        <Version>0.10.1-unlimited.2</Version>
+        <Version>0.10.1</Version>
         <Authors>Etienne Baudoux, BENZOOgataga</Authors>
         <Title>Clipboard History No Limits</Title>
         <Description>

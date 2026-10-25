@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Windowing;
+using Microsoft.Extensions.Logging;
 using System.Runtime.InteropServices;
 using Windows.Graphics;
 using Windows.System;
@@ -15,18 +16,30 @@ namespace WindowSill.ClipboardHistory.Views;
 /// </summary>
 internal sealed partial class ClipboardHistoryPopupContent : SillPopupContent
 {
-    private readonly ISettingsProvider _settingsProvider;
+    private PopupInvocationContext? _invocation;
+    private PopupOpeningPlacement? _openingPlacement;
+    private bool _pasteInProgress;
+    private nint _targetWindow;
+    private uint _targetProcessId;
     private AppWindow? _dragWindow;
     private IDisposable? _dragAutoClose;
     private int _dragOffsetX;
     private int _dragOffsetY;
 
-    internal ClipboardHistoryPopupContent(ClipboardHistoryPopupViewModel viewModel, ISettingsProvider settingsProvider)
+    internal ClipboardHistoryPopupContent(ClipboardHistoryPopupViewModel viewModel)
     {
-        _settingsProvider = settingsProvider;
         ViewModel = viewModel;
         InitializeComponent();
-        AddHandler(KeyDownEvent, new KeyEventHandler(OnPopupKeyDown), handledEventsToo: true);
+        AddHandler(PreviewKeyDownEvent, new KeyEventHandler(OnPopupKeyDown), handledEventsToo: true);
+    }
+
+    internal bool IsOpen { get; private set; }
+
+    internal void PrepareKeyboardOpen(PopupInvocationContext context)
+    {
+        _invocation = context;
+        Width = Math.Max(1, Math.Min(360, context.WorkArea.Width / context.Scale - 16));
+        Height = Math.Max(1, Math.Min(400, context.WorkArea.Height / context.Scale - 16));
     }
 
     /// <summary>
@@ -34,7 +47,9 @@ internal sealed partial class ClipboardHistoryPopupContent : SillPopupContent
     /// </summary>
     internal ClipboardHistoryPopupViewModel ViewModel { get; }
 
-    internal string PopupTitle { get; } = "/WindowSill.ClipboardHistory/Misc/DisplayName".GetLocalizedString();
+    internal string PopupTitle { get; } = "/WindowSill.ClipboardHistory/Misc/ClipboardTitle".GetLocalizedString();
+    internal string CloseTooltip { get; } = "/WindowSill.ClipboardHistory/Misc/Close".GetLocalizedString();
+    internal string ClearAllText { get; } = "/WindowSill.ClipboardHistory/Misc/ClearAll".GetLocalizedString();
 
     internal string ClearHistoryTooltip { get; } = "/WindowSill.ClipboardHistory/Misc/ClearHistory".GetLocalizedString();
 
@@ -42,26 +57,36 @@ internal sealed partial class ClipboardHistoryPopupContent : SillPopupContent
 
     internal string NoSearchResultsText { get; } = "/WindowSill.ClipboardHistory/Misc/NoSearchResults".GetLocalizedString();
 
-    private void ClipboardHistoryPopupContent_Loaded(object sender, RoutedEventArgs e)
-    {
-        SearchBox.Focus(FocusState.Programmatic);
-    }
-
     public override void OnOpening()
     {
         base.OnOpening();
+        IsOpen = true;
+        _pasteInProgress = false;
+        _targetWindow = _invocation?.TargetWindow ?? ExplorerDetector.GetLastActiveWindow();
+        _targetProcessId = _invocation?.TargetProcessId ?? PopupInvocationContext.ProcessIdOf(_targetWindow);
+        ViewModel.Items.CollectionChanged += Items_CollectionChanged;
+        if (_invocation is not null && XamlRoot is not null)
+        {
+            _openingPlacement?.Dispose();
+            var window = Microsoft.UI.Win32Interop.GetWindowFromWindowId(XamlRoot.ContentIslandEnvironment.AppWindowId);
+            try { _openingPlacement = new PopupOpeningPlacement(window, _invocation, Width, Height); }
+            catch (Exception ex) { this.Log().LogWarning(ex, "Automatic popup placement is unavailable; using the host placement."); }
+        }
         DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
         {
-            int x = _settingsProvider.GetSetting(Settings.Settings.PopupX);
-            int y = _settingsProvider.GetSetting(Settings.Settings.PopupY);
-            if (x != int.MinValue && y != int.MinValue && XamlRoot is not null)
-                MoveWithinWorkArea(AppWindow.GetFromWindowId(XamlRoot.ContentIslandEnvironment.AppWindowId), x, y);
+            if (!IsOpen) return;
+            ClipboardItems.SelectedIndex = ViewModel.Items.Count > 0 ? 0 : -1;
+            if (ClipboardItems.SelectedItem is not null) ClipboardItems.ScrollIntoView(ClipboardItems.SelectedItem);
             SearchBox.Focus(FocusState.Programmatic);
         });
     }
 
     public override void OnClosing()
     {
+        IsOpen = false;
+        ViewModel.Items.CollectionChanged -= Items_CollectionChanged;
+        _openingPlacement?.Dispose();
+        _openingPlacement = null;
         EndDrag();
         base.OnClosing();
     }
@@ -97,8 +122,6 @@ internal sealed partial class ClipboardHistoryPopupContent : SillPopupContent
         if (_dragWindow is not null)
         {
             MoveWithinWorkArea(_dragWindow, _dragWindow.Position.X, _dragWindow.Position.Y);
-            _settingsProvider.SetSetting(Settings.Settings.PopupX, _dragWindow.Position.X);
-            _settingsProvider.SetSetting(Settings.Settings.PopupY, _dragWindow.Position.Y);
             _dragWindow = null;
         }
         _dragAutoClose?.Dispose();
@@ -134,21 +157,68 @@ internal sealed partial class ClipboardHistoryPopupContent : SillPopupContent
         {
             e.Handled = true;
             Close();
+            return;
         }
+        bool control = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
+        if (control && e.Key == VirtualKey.F) { SearchBox.Focus(FocusState.Keyboard); e.Handled = true; return; }
+        if (IsActionButton(e.OriginalSource as DependencyObject)) return;
+        if (e.Key is VirtualKey.Down or VirtualKey.Up)
+        {
+            e.Handled = true;
+            int index = PopupNavigation.Next(ClipboardItems.SelectedIndex, ViewModel.Items.Count, e.Key == VirtualKey.Down ? 1 : -1);
+            ClipboardItems.SelectedIndex = index;
+            if (index >= 0)
+            {
+                ClipboardItems.ScrollIntoView(ViewModel.Items[index]);
+                ClipboardItems.Focus(FocusState.Keyboard);
+                (ClipboardItems.ContainerFromIndex(index) as Control)?.Focus(FocusState.Keyboard);
+            }
+        }
+        else if (e.Key == VirtualKey.Enter)
+        {
+            e.Handled = true;
+            if (ClipboardItems.SelectedItem is ClipboardHistoryItemViewModelBase item) PasteSelectedAsync(item).Forget();
+        }
+    }
+
+    private static bool IsActionButton(DependencyObject? source)
+    {
+        while (source is not null)
+        {
+            if (source is Microsoft.UI.Xaml.Controls.Primitives.ButtonBase) return true;
+            source = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetParent(source);
+        }
+        return false;
+    }
+
+    private void Items_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        if (IsOpen && ClipboardItems.SelectedIndex < 0 && ViewModel.Items.Count > 0) ClipboardItems.SelectedIndex = 0;
+    }
+
+    private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
+
+    private async Task PasteSelectedAsync(ClipboardHistoryItemViewModelBase item)
+    {
+        if (_pasteInProgress) return;
+        _pasteInProgress = true;
+        nint target = _targetWindow;
+        uint processId = _targetProcessId;
+        Close();
+        try { await item.PasteFromPopupAsync(target, processId); }
+        catch (Exception ex) { this.Log().LogWarning(ex, "The selected clipboard item could not be pasted."); }
     }
 
     private void ClipboardItemsShortcutListView_ItemClick(object sender, ItemClickEventArgs e)
     {
         if (e.ClickedItem is ClipboardHistoryItemViewModelBase viewModel)
         {
-            Close();
-            viewModel.PasteCommand.Execute(null);
+            PasteSelectedAsync(viewModel).Forget();
         }
     }
 
     private void ClipboardItemsShortcutListView_ItemInvoked(object sender, ClipboardHistoryItemViewModelBase e)
     {
-        Close();
-        e.PasteCommand.Execute(null);
+        PasteSelectedAsync(e).Forget();
     }
 }

@@ -11,19 +11,14 @@
     xmlns:vm="using:WindowSill.ClipboardHistory.ViewModels"
     Width="360"
     Height="400"
-    MinWidth="360"
-    MinHeight="400"
-    MaxWidth="360"
-    MaxHeight="400"
-    Loaded="ClipboardHistoryPopupContent_Loaded"
     mc:Ignorable="d">
 
     <api:SillPopupContent.Resources>
         <!--  Text / Html / Rtf template  -->
         <DataTemplate x:Key="TextItemTemplate" x:DataType="vm:TextItemViewModel">
             <Grid
-                Height="44"
-                Padding="16,0"
+                MinHeight="76"
+                Padding="12,8"
                 ColumnSpacing="10">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -35,14 +30,14 @@
                     VerticalAlignment="Center"
                     Text="{x:Bind DisplayText, Mode=OneWay}"
                     TextTrimming="CharacterEllipsis"
-                    TextWrapping="NoWrap" />
+                    TextWrapping="Wrap" MaxLines="3" />
                 <Button
                     Grid.Column="1"
                     VerticalAlignment="Center"
                     Command="{x:Bind TogglePinCommand}"
                     IsEnabled="{x:Bind CanTogglePin, Mode=OneWay}"
                     Style="{StaticResource IconButton}"
-                    ToolTipService.ToolTip="{x:Bind PinTooltip, Mode=OneWay}">
+                    ToolTipService.ToolTip="{x:Bind PinTooltip, Mode=OneWay}" AutomationProperties.Name="{x:Bind PinTooltip, Mode=OneWay}">
                     <FontIcon FontSize="12" Glyph="{x:Bind PinGlyph, Mode=OneWay}" />
                 </Button>
                 <Button
@@ -50,7 +45,7 @@
                     VerticalAlignment="Center"
                     Command="{x:Bind DeleteCommand}"
                     Style="{StaticResource IconButton}"
-                    ToolTipService.ToolTip="Delete">
+                    ToolTipService.ToolTip="{x:Bind DeleteTooltip}" AutomationProperties.Name="{x:Bind DeleteTooltip}">
                     <FontIcon FontSize="12" Glyph="&#xE74D;" />
                 </Button>
             </Grid>
@@ -59,8 +54,8 @@
         <!--  Html template (shares text layout)  -->
         <DataTemplate x:Key="HtmlItemTemplate" x:DataType="vm:HtmlItemViewModel">
             <Grid
-                Height="44"
-                Padding="16,0"
+                MinHeight="76"
+                Padding="12,8"
                 ColumnSpacing="10">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -72,14 +67,14 @@
                     VerticalAlignment="Center"
                     Text="{x:Bind DisplayText, Mode=OneWay}"
                     TextTrimming="CharacterEllipsis"
-                    TextWrapping="NoWrap" />
+                    TextWrapping="Wrap" MaxLines="3" />
                 <Button
                     Grid.Column="1"
                     VerticalAlignment="Center"
                     Command="{x:Bind TogglePinCommand}"
                     IsEnabled="{x:Bind CanTogglePin, Mode=OneWay}"
                     Style="{StaticResource IconButton}"
-                    ToolTipService.ToolTip="{x:Bind PinTooltip, Mode=OneWay}">
+                    ToolTipService.ToolTip="{x:Bind PinTooltip, Mode=OneWay}" AutomationProperties.Name="{x:Bind PinTooltip, Mode=OneWay}">
                     <FontIcon FontSize="12" Glyph="{x:Bind PinGlyph, Mode=OneWay}" />
                 </Button>
                 <Button
@@ -87,7 +82,7 @@
                     VerticalAlignment="Center"
                     Command="{x:Bind DeleteCommand}"
                     Style="{StaticResource IconButton}"
-                    ToolTipService.ToolTip="Delete">
+                    ToolTipService.ToolTip="{x:Bind DeleteTooltip}" AutomationProperties.Name="{x:Bind DeleteTooltip}">
                     <FontIcon FontSize="12" Glyph="&#xE74D;" />
                 </Button>
             </Grid>
@@ -96,8 +91,8 @@
         <!--  Rtf template (shares text layout)  -->
         <DataTemplate x:Key="RtfItemTemplate" x:DataType="vm:RtfItemViewModel">
             <Grid
-                Height="44"
-                Padding="16,0"
+                MinHeight="76"
+                Padding="12,8"
                 ColumnSpacing="10">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -109,14 +104,14 @@
                     VerticalAlignment="Center"
                     Text="{x:Bind DisplayText, Mode=OneWay}"
                     TextTrimming="CharacterEllipsis"
-                    TextWrapping="NoWrap" />
+                    TextWrapping="Wrap" MaxLines="3" />
                 <Button
                     Grid.Column="1"
                     VerticalAlignment="Center"
                     Command="{x:Bind TogglePinCommand}"
                     IsEnabled="{x:Bind CanTogglePin, Mode=OneWay}"
                     Style="{StaticResource IconButton}"
-                    ToolTipService.ToolTip="{x:Bind PinTooltip, Mode=OneWay}">
+                    ToolTipService.ToolTip="{x:Bind PinTooltip, Mode=OneWay}" AutomationProperties.Name="{x:Bind PinTooltip, Mode=OneWay}">
                     <FontIcon FontSize="12" Glyph="{x:Bind PinGlyph, Mode=OneWay}" />
                 </Button>
                 <Button
@@ -124,7 +119,7 @@
                     VerticalAlignment="Center"
                     Command="{x:Bind DeleteCommand}"
                     Style="{StaticResource IconButton}"
-                    ToolTipService.ToolTip="Delete">
+                    ToolTipService.ToolTip="{x:Bind DeleteTooltip}" AutomationProperties.Name="{x:Bind DeleteTooltip}">
                     <FontIcon FontSize="12" Glyph="&#xE74D;" />
                 </Button>
             </Grid>
@@ -133,7 +128,7 @@
         <!--  Image template  -->
         <DataTemplate x:Key="ImageItemTemplate" x:DataType="vm:ImageItemViewModel">
             <Grid
-                Height="56"
+                Height="84"
                 Padding="16,4"
                 ColumnSpacing="10">
                 <Grid.ColumnDefinitions>
@@ -144,8 +139,8 @@
                 </Grid.ColumnDefinitions>
                 <Border
                     Grid.Column="0"
-                    MaxWidth="48"
-                    MaxHeight="48"
+                    MaxWidth="96"
+                    MaxHeight="68"
                     VerticalAlignment="Center"
                     CornerRadius="4">
                     <Image Source="{x:Bind Image, Mode=OneWay}" Stretch="Uniform" />
@@ -156,14 +151,14 @@
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                     Text="{x:Bind Size, Mode=OneWay}"
                     TextTrimming="CharacterEllipsis"
-                    TextWrapping="NoWrap" />
+                    TextWrapping="Wrap" MaxLines="3" />
                 <Button
                     Grid.Column="2"
                     VerticalAlignment="Center"
                     Command="{x:Bind TogglePinCommand}"
                     IsEnabled="{x:Bind CanTogglePin, Mode=OneWay}"
                     Style="{StaticResource IconButton}"
-                    ToolTipService.ToolTip="{x:Bind PinTooltip, Mode=OneWay}">
+                    ToolTipService.ToolTip="{x:Bind PinTooltip, Mode=OneWay}" AutomationProperties.Name="{x:Bind PinTooltip, Mode=OneWay}">
                     <FontIcon FontSize="12" Glyph="{x:Bind PinGlyph, Mode=OneWay}" />
                 </Button>
                 <Button
@@ -171,7 +166,7 @@
                     VerticalAlignment="Center"
                     Command="{x:Bind DeleteCommand}"
                     Style="{StaticResource IconButton}"
-                    ToolTipService.ToolTip="Delete">
+                    ToolTipService.ToolTip="{x:Bind DeleteTooltip}" AutomationProperties.Name="{x:Bind DeleteTooltip}">
                     <FontIcon FontSize="12" Glyph="&#xE74D;" />
                 </Button>
             </Grid>
@@ -180,8 +175,8 @@
         <!--  URI template  -->
         <DataTemplate x:Key="UriItemTemplate" x:DataType="vm:UriItemViewModel">
             <Grid
-                Height="44"
-                Padding="16,0"
+                MinHeight="76"
+                Padding="12,8"
                 ColumnSpacing="10">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -200,13 +195,13 @@
                     VerticalAlignment="Center"
                     Text="{x:Bind Url, Mode=OneWay}"
                     TextTrimming="CharacterEllipsis"
-                    TextWrapping="NoWrap" />
+                    TextWrapping="Wrap" MaxLines="3" />
                 <Button
                     Grid.Column="2"
                     VerticalAlignment="Center"
                     Command="{x:Bind OpenInBrowserCommand}"
                     Style="{StaticResource IconButton}"
-                    ToolTipService.ToolTip="Open in browser">
+                    ToolTipService.ToolTip="{x:Bind OpenTooltip}" AutomationProperties.Name="{x:Bind OpenTooltip}">
                     <FontIcon FontSize="12" Glyph="&#xE8A7;" />
                 </Button>
                 <Button
@@ -215,7 +210,7 @@
                     Command="{x:Bind TogglePinCommand}"
                     IsEnabled="{x:Bind CanTogglePin, Mode=OneWay}"
                     Style="{StaticResource IconButton}"
-                    ToolTipService.ToolTip="{x:Bind PinTooltip, Mode=OneWay}">
+                    ToolTipService.ToolTip="{x:Bind PinTooltip, Mode=OneWay}" AutomationProperties.Name="{x:Bind PinTooltip, Mode=OneWay}">
                     <FontIcon FontSize="12" Glyph="{x:Bind PinGlyph, Mode=OneWay}" />
                 </Button>
                 <Button
@@ -223,7 +218,7 @@
                     VerticalAlignment="Center"
                     Command="{x:Bind DeleteCommand}"
                     Style="{StaticResource IconButton}"
-                    ToolTipService.ToolTip="Delete">
+                    ToolTipService.ToolTip="{x:Bind DeleteTooltip}" AutomationProperties.Name="{x:Bind DeleteTooltip}">
                     <FontIcon FontSize="12" Glyph="&#xE74D;" />
                 </Button>
             </Grid>
@@ -232,8 +227,8 @@
         <!--  Application Link template  -->
         <DataTemplate x:Key="AppLinkItemTemplate" x:DataType="vm:ApplicationLinkItemViewModel">
             <Grid
-                Height="44"
-                Padding="16,0"
+                MinHeight="76"
+                Padding="12,8"
                 ColumnSpacing="10">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -252,13 +247,13 @@
                     VerticalAlignment="Center"
                     Text="{x:Bind DisplayText, Mode=OneWay}"
                     TextTrimming="CharacterEllipsis"
-                    TextWrapping="NoWrap" />
+                    TextWrapping="Wrap" MaxLines="3" />
                 <Button
                     Grid.Column="2"
                     VerticalAlignment="Center"
                     Command="{x:Bind OpenApplicationCommand}"
                     Style="{StaticResource IconButton}"
-                    ToolTipService.ToolTip="Open application">
+                    ToolTipService.ToolTip="{x:Bind OpenTooltip}" AutomationProperties.Name="{x:Bind OpenTooltip}">
                     <FontIcon FontSize="12" Glyph="&#xE8A7;" />
                 </Button>
                 <Button
@@ -267,7 +262,7 @@
                     Command="{x:Bind TogglePinCommand}"
                     IsEnabled="{x:Bind CanTogglePin, Mode=OneWay}"
                     Style="{StaticResource IconButton}"
-                    ToolTipService.ToolTip="{x:Bind PinTooltip, Mode=OneWay}">
+                    ToolTipService.ToolTip="{x:Bind PinTooltip, Mode=OneWay}" AutomationProperties.Name="{x:Bind PinTooltip, Mode=OneWay}">
                     <FontIcon FontSize="12" Glyph="{x:Bind PinGlyph, Mode=OneWay}" />
                 </Button>
                 <Button
@@ -275,7 +270,7 @@
                     VerticalAlignment="Center"
                     Command="{x:Bind DeleteCommand}"
                     Style="{StaticResource IconButton}"
-                    ToolTipService.ToolTip="Delete">
+                    ToolTipService.ToolTip="{x:Bind DeleteTooltip}" AutomationProperties.Name="{x:Bind DeleteTooltip}">
                     <FontIcon FontSize="12" Glyph="&#xE74D;" />
                 </Button>
             </Grid>
@@ -284,8 +279,8 @@
         <!--  Color template  -->
         <DataTemplate x:Key="ColorItemTemplate" x:DataType="vm:ColorItemViewModel">
             <Grid
-                Height="44"
-                Padding="16,0"
+                MinHeight="76"
+                Padding="12,8"
                 ColumnSpacing="10">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -307,14 +302,14 @@
                     VerticalAlignment="Center"
                     Text="{x:Bind ColorText, Mode=OneWay}"
                     TextTrimming="CharacterEllipsis"
-                    TextWrapping="NoWrap" />
+                    TextWrapping="Wrap" MaxLines="3" />
                 <Button
                     Grid.Column="2"
                     VerticalAlignment="Center"
                     Command="{x:Bind TogglePinCommand}"
                     IsEnabled="{x:Bind CanTogglePin, Mode=OneWay}"
                     Style="{StaticResource IconButton}"
-                    ToolTipService.ToolTip="{x:Bind PinTooltip, Mode=OneWay}">
+                    ToolTipService.ToolTip="{x:Bind PinTooltip, Mode=OneWay}" AutomationProperties.Name="{x:Bind PinTooltip, Mode=OneWay}">
                     <FontIcon FontSize="12" Glyph="{x:Bind PinGlyph, Mode=OneWay}" />
                 </Button>
                 <Button
@@ -322,7 +317,7 @@
                     VerticalAlignment="Center"
                     Command="{x:Bind DeleteCommand}"
                     Style="{StaticResource IconButton}"
-                    ToolTipService.ToolTip="Delete">
+                    ToolTipService.ToolTip="{x:Bind DeleteTooltip}" AutomationProperties.Name="{x:Bind DeleteTooltip}">
                     <FontIcon FontSize="12" Glyph="&#xE74D;" />
                 </Button>
             </Grid>
@@ -331,8 +326,8 @@
         <!--  File template  -->
         <DataTemplate x:Key="FileItemTemplate" x:DataType="vm:FileItemViewModel">
             <Grid
-                Height="44"
-                Padding="16,0"
+                MinHeight="76"
+                Padding="12,8"
                 ColumnSpacing="10">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -350,13 +345,13 @@
                     VerticalAlignment="Center"
                     Text="{x:Bind DisplayText, Mode=OneWay}"
                     TextTrimming="CharacterEllipsis"
-                    TextWrapping="NoWrap" />
+                    TextWrapping="Wrap" MaxLines="3" />
                 <Button
                     Grid.Column="2"
                     VerticalAlignment="Center"
                     Command="{x:Bind OpenInFileExplorerCommand}"
                     Style="{StaticResource IconButton}"
-                    ToolTipService.ToolTip="Open in File Explorer">
+                    ToolTipService.ToolTip="{x:Bind OpenTooltip}" AutomationProperties.Name="{x:Bind OpenTooltip}">
                     <FontIcon FontSize="12" Glyph="&#xE8A7;" />
                 </Button>
                 <Button
@@ -365,7 +360,7 @@
                     Command="{x:Bind TogglePinCommand}"
                     IsEnabled="{x:Bind CanTogglePin, Mode=OneWay}"
                     Style="{StaticResource IconButton}"
-                    ToolTipService.ToolTip="{x:Bind PinTooltip, Mode=OneWay}">
+                    ToolTipService.ToolTip="{x:Bind PinTooltip, Mode=OneWay}" AutomationProperties.Name="{x:Bind PinTooltip, Mode=OneWay}">
                     <FontIcon FontSize="12" Glyph="{x:Bind PinGlyph, Mode=OneWay}" />
                 </Button>
                 <Button
@@ -373,7 +368,7 @@
                     VerticalAlignment="Center"
                     Command="{x:Bind DeleteCommand}"
                     Style="{StaticResource IconButton}"
-                    ToolTipService.ToolTip="Delete">
+                    ToolTipService.ToolTip="{x:Bind DeleteTooltip}" AutomationProperties.Name="{x:Bind DeleteTooltip}">
                     <FontIcon FontSize="12" Glyph="&#xE74D;" />
                 </Button>
             </Grid>
@@ -382,8 +377,8 @@
         <!--  UserActivity template  -->
         <DataTemplate x:Key="UserActivityItemTemplate" x:DataType="vm:UserActivityItemViewModel">
             <Grid
-                Height="44"
-                Padding="16,0"
+                MinHeight="76"
+                Padding="12,8"
                 ColumnSpacing="10">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -401,14 +396,14 @@
                     VerticalAlignment="Center"
                     Text="{x:Bind DisplayText, Mode=OneWay}"
                     TextTrimming="CharacterEllipsis"
-                    TextWrapping="NoWrap" />
+                    TextWrapping="Wrap" MaxLines="3" />
                 <Button
                     Grid.Column="2"
                     VerticalAlignment="Center"
                     Command="{x:Bind TogglePinCommand}"
                     IsEnabled="{x:Bind CanTogglePin, Mode=OneWay}"
                     Style="{StaticResource IconButton}"
-                    ToolTipService.ToolTip="{x:Bind PinTooltip, Mode=OneWay}">
+                    ToolTipService.ToolTip="{x:Bind PinTooltip, Mode=OneWay}" AutomationProperties.Name="{x:Bind PinTooltip, Mode=OneWay}">
                     <FontIcon FontSize="12" Glyph="{x:Bind PinGlyph, Mode=OneWay}" />
                 </Button>
                 <Button
@@ -416,7 +411,7 @@
                     VerticalAlignment="Center"
                     Command="{x:Bind DeleteCommand}"
                     Style="{StaticResource IconButton}"
-                    ToolTipService.ToolTip="Delete">
+                    ToolTipService.ToolTip="{x:Bind DeleteTooltip}" AutomationProperties.Name="{x:Bind DeleteTooltip}">
                     <FontIcon FontSize="12" Glyph="&#xE74D;" />
                 </Button>
             </Grid>
@@ -425,8 +420,8 @@
         <!--  Unknown / Default template  -->
         <DataTemplate x:Key="UnknownItemTemplate" x:DataType="vm:UnknownItemViewModel">
             <Grid
-                Height="44"
-                Padding="16,0"
+                MinHeight="76"
+                Padding="12,8"
                 ColumnSpacing="10">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -444,14 +439,14 @@
                     VerticalAlignment="Center"
                     Text="{x:Bind DisplayText, Mode=OneWay}"
                     TextTrimming="CharacterEllipsis"
-                    TextWrapping="NoWrap" />
+                    TextWrapping="Wrap" MaxLines="3" />
                 <Button
                     Grid.Column="2"
                     VerticalAlignment="Center"
                     Command="{x:Bind TogglePinCommand}"
                     IsEnabled="{x:Bind CanTogglePin, Mode=OneWay}"
                     Style="{StaticResource IconButton}"
-                    ToolTipService.ToolTip="{x:Bind PinTooltip, Mode=OneWay}">
+                    ToolTipService.ToolTip="{x:Bind PinTooltip, Mode=OneWay}" AutomationProperties.Name="{x:Bind PinTooltip, Mode=OneWay}">
                     <FontIcon FontSize="12" Glyph="{x:Bind PinGlyph, Mode=OneWay}" />
                 </Button>
                 <Button
@@ -459,7 +454,7 @@
                     VerticalAlignment="Center"
                     Command="{x:Bind DeleteCommand}"
                     Style="{StaticResource IconButton}"
-                    ToolTipService.ToolTip="Delete">
+                    ToolTipService.ToolTip="{x:Bind DeleteTooltip}" AutomationProperties.Name="{x:Bind DeleteTooltip}">
                     <FontIcon FontSize="12" Glyph="&#xE74D;" />
                 </Button>
             </Grid>
@@ -491,6 +486,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <Border
                 x:Name="DragHandle"
@@ -502,21 +498,25 @@
                 PointerCaptureLost="DragHandle_PointerCaptureLost">
                 <TextBlock
                     VerticalAlignment="Center"
-                    Style="{ThemeResource SubtitleTextBlockStyle}"
+                    FontSize="16"
+                    FontWeight="SemiBold"
                     TextTrimming="CharacterEllipsis"
                     TextWrapping="NoWrap"
                     Text="{x:Bind PopupTitle}" />
             </Border>
             <Button
                 Grid.Column="1"
-                Width="32"
-                Height="32"
+                Height="28"
+                Padding="8,0"
                 Margin="0,0,8,0"
                 VerticalAlignment="Center"
                 Command="{x:Bind ViewModel.ClearAllCommand}"
-                Style="{StaticResource IconButton}"
                 ToolTipService.ToolTip="{x:Bind ClearHistoryTooltip}">
-                <FontIcon FontSize="12" Glyph="&#xE74D;" />
+                <TextBlock Text="{x:Bind ClearAllText}" />
+            </Button>
+            <Button Grid.Column="2" Width="28" Height="28" Style="{StaticResource IconButton}"
+                    Click="CloseButton_Click" ToolTipService.ToolTip="{x:Bind CloseTooltip}" AutomationProperties.Name="{x:Bind CloseTooltip}">
+                <FontIcon FontSize="12" Glyph="&#xE8BB;" />
             </Button>
         </Grid>
 
@@ -554,6 +554,7 @@
             TextWrapping="WrapWholeWords"
             Visibility="{x:Bind ViewModel.NoSearchResultsVisibility, Mode=OneWay}" />
         <ui:ShortcutListView
+            x:Name="ClipboardItems"
             Grid.Row="2"
             Padding="4"
             HorizontalAlignment="Stretch"
@@ -564,7 +565,16 @@
             ContainerContentChanging="ClipboardItems_ContainerContentChanging"
             ItemTemplateSelector="{StaticResource PopupItemTemplateSelector}"
             ItemsSource="{x:Bind ViewModel.Items}"
-            SelectionMode="None">
+            SelectionMode="Single">
+            <ui:ShortcutListView.ItemContainerStyle>
+                <Style TargetType="ui:ShortcutListViewItem">
+                    <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+                    <Setter Property="CornerRadius" Value="8" />
+                    <Setter Property="Padding" Value="0" />
+                    <Setter Property="Margin" Value="4,3" />
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                </Style>
+            </ui:ShortcutListView.ItemContainerStyle>
             <ui:ShortcutListView.ItemsPanel>
                 <ItemsPanelTemplate><ItemsStackPanel /></ItemsPanelTemplate>
             </ui:ShortcutListView.ItemsPanel>

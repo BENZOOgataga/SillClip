@@ -14,6 +14,7 @@ namespace WindowSill.ClipboardHistory.ViewModels;
 /// </summary>
 internal sealed partial class ApplicationLinkItemViewModel : ClipboardHistoryItemViewModelBase
 {
+    protected override DetectedClipboardDataType DetectedDataType => DetectedClipboardDataType.ApplicationLink;
     private readonly ILogger _logger;
 
     /// <summary>

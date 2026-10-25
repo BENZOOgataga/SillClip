@@ -2,7 +2,7 @@
 
 This project is a focused fork of the official WindowSill Clipboard History extension. It keeps the original interface and clipboard actions, then adds the features needed for histories larger than the Windows limit.
 
-Download the `.wsext` package from the [current prerelease](https://github.com/BENZOOgataga/WindowSill-NoClipBoardHistoryLimit/releases/tag/v0.10.1-unlimited.2). Installation steps are below. You need Windows 11 and WindowSill 1.0.3 or newer.
+Download the `.wsext` package from the [stable release](https://github.com/BENZOOgataga/WindowSill-NoClipBoardHistoryLimit/releases/tag/v0.10.1). Installation steps are below. You need Windows 11 and WindowSill 1.0.3 or newer.
 
 ## What this fork adds
 
@@ -13,7 +13,8 @@ Download the `.wsext` package from the [current prerelease](https://github.com/B
 - Compact mode includes the same live search field.
 - Win+V opens the searchable WindowSill history instead of the Windows panel.
 - An automatic GitHub Releases check reports when a newer version is available.
-- The popup can be dragged by its heading and remembers its position after a restart.
+- Win+V places the popup near the text caret when available, with a fallback on the active monitor.
+- Right-click a bar item to choose Paste or Copy.
 
 Pinned items remain separate from the retention limit and stay at the top.
 
@@ -21,9 +22,9 @@ Pinned items remain separate from the retention limit and stay at the top.
 
 Windows exposes only a small clipboard history through `Clipboard.GetHistoryItemsAsync()`. Raising the old setting above that number cannot change the Windows limit by itself.
 
-This fork listens for clipboard changes while WindowSill is running and writes its own archive. Text, HTML, RTF, links, colors, images, and file references can be restored after a restart. Repeated content is deduplicated by a SHA-256 content signature.
+This fork listens for clipboard changes while WindowSill is running and writes its own archive from entries accepted by Windows clipboard history. Text, HTML, RTF, links, colors, images, and file references can be restored after a restart. Repeated content is deduplicated by a SHA-256 content signature. Windows can still reject an individual copy because of its format or size; removing the archive count limit does not change that capture constraint.
 
-Archive metadata and image data are encrypted with Windows DPAPI for the current user. The files cannot be decrypted by another Windows account or on another computer. Clipboard data is still sensitive, so persistent history can be disabled in the extension settings. Clearing the history also clears the encrypted archive, but pinned items are preserved.
+Archive metadata and image data are encrypted with Windows DPAPI for the current user. The files cannot be decrypted by another Windows account or on another computer. Clipboard data is still sensitive, so persistent history can be disabled in the extension settings. Use Clear all in this extension to clear its encrypted archive; pinned items are preserved. Clearing history in Windows Settings alone does not clear the extension's archive.
 
 Images are read from disk on demand and decoded as thumbnails for the list. Link icons are local; copied URLs are not sent to a favicon service. The Hide passwords option masks detected passwords in the list and preview and excludes them from text search. Detection is heuristic, so this option does not prevent every secret from being displayed or stored.
 
@@ -36,6 +37,12 @@ In expanded mode, the bar keeps the 25 most recent entries visible and the searc
 ## Win+V shortcut
 
 The `Open this history with Win+V` setting is enabled by default. While the extension is active, it intercepts Win+V and opens the searchable WindowSill popup. Disable the setting to restore the standard Windows clipboard panel without uninstalling the extension.
+
+Escape or a second Win+V closes the popup. Up and Down select an item; Enter or a click pastes it. Ctrl+F returns to search. The popup is 360 by 400 logical pixels, constrained to the display's work area. It opens below or above the text caret when Windows exposes one, otherwise near the lower-right corner of the active window's monitor. Drag the heading to move it for the current opening. Each new Win+V invocation chooses its position again.
+
+In the WindowSill bar, left-clicking an item pastes it. Right-clicking offers Paste and Copy; Copy updates the clipboard without sending a paste command. If focus changes to another application while the popup closes, the item remains copied and automatic paste is skipped.
+
+See the [Win+V audit](docs/win-v-audit.md) for the native behavior comparison, test coverage, and remaining differences.
 
 Windows reserves Win+V for the Shell, and the WindowSill SDK does not expose a global shortcut API. This fork therefore uses a narrowly scoped low-level keyboard hook that intercepts only Win+V. The hook runs on a dedicated thread with its own message loop. It is removed when the Sill is deactivated or the setting is disabled.
 
@@ -56,7 +63,7 @@ To install:
 1. Open WindowSill Settings.
 2. Open Manage Extensions.
 3. Disable the official Clipboard History extension to avoid two active clipboard panels.
-4. Download `WindowSill.ClipboardHistory.NoLimits.0.10.1-unlimited.2.wsext` from the [release page](https://github.com/BENZOOgataga/WindowSill-NoClipBoardHistoryLimit/releases/tag/v0.10.1-unlimited.2).
+4. Download `WindowSill.ClipboardHistory.NoLimits.0.10.1.wsext` from the [release page](https://github.com/BENZOOgataga/WindowSill-NoClipBoardHistoryLimit/releases/tag/v0.10.1).
 5. Double-click the `.wsext` file in File Explorer.
 6. Accept the WindowSill installation prompt, then enable Clipboard History No Limits if needed.
 
@@ -88,6 +95,7 @@ Run the regression tests with:
 
 ```powershell
 dotnet test tests/UnitTests/UnitTests.csproj -c Release
+dotnet run --project tests/NativePlacementProbe -c Release
 ```
 
 To debug the extension:
@@ -102,6 +110,8 @@ To debug the extension:
 The extension checks this repository at startup and every six hours while active. Check now bypasses that interval. Only releases with a `WindowSill.ClipboardHistory.NoLimits.*.wsext` asset count as installable updates. Stable installations ignore prereleases; prerelease installations can see both channels.
 
 Updates are not downloaded or installed automatically. When an update is available, Open release opens its GitHub page. Install its `.wsext` package using the steps above. A source commit alone is not an installable update.
+
+The GitHub check is separate from WindowSill's marketplace update service. Publishing a stable GitHub release does not register this fork in the marketplace.
 
 ## Credits and license
 

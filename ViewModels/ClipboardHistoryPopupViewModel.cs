@@ -19,6 +19,7 @@ internal sealed partial class ClipboardHistoryPopupViewModel : ObservableObject,
     private readonly PersistentClipboardService _persistentService;
     private bool _filterQueued;
     private bool _disposed;
+    private bool _applyingFilter;
 
     public ClipboardHistoryPopupViewModel(PersistentClipboardService persistentService)
     {
@@ -61,6 +62,7 @@ internal sealed partial class ClipboardHistoryPopupViewModel : ObservableObject,
 
     internal void RefreshFilter()
     {
+        if (_disposed) return;
         string[] terms = SearchQuery
             .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
@@ -69,7 +71,9 @@ internal sealed partial class ClipboardHistoryPopupViewModel : ObservableObject,
             : AllItems.Where(item => terms.All(term =>
                 item.SearchText.Contains(term, StringComparison.CurrentCultureIgnoreCase)));
 
-        CollectionReconciler.Update(Items, matchingItems.ToArray());
+        _applyingFilter = true;
+        try { CollectionReconciler.Update(Items, matchingItems.ToArray()); }
+        finally { _applyingFilter = false; }
 
         OnPropertyChanged(nameof(EmptyClipboardIndicatorVisibility));
         OnPropertyChanged(nameof(NoSearchResultsVisibility));
@@ -93,10 +97,15 @@ internal sealed partial class ClipboardHistoryPopupViewModel : ObservableObject,
             }
         }
 
+        QueueFilter();
+    }
+
+    private void QueueFilter()
+    {
         if (!_filterQueued && !_disposed)
         {
             _filterQueued = true;
-            Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread().TryEnqueue(() =>
+            Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread().TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
             {
                 _filterQueued = false;
                 if (!_disposed) RefreshFilter();
@@ -109,12 +118,13 @@ internal sealed partial class ClipboardHistoryPopupViewModel : ObservableObject,
         if (e.PropertyName == nameof(ClipboardHistoryItemViewModelBase.SearchText)
             && !string.IsNullOrWhiteSpace(SearchQuery))
         {
-            RefreshFilter();
+            QueueFilter();
         }
     }
 
     private void Items_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
+        if (_applyingFilter) return;
         OnPropertyChanged(nameof(EmptyClipboardIndicatorVisibility));
         OnPropertyChanged(nameof(NoSearchResultsVisibility));
     }

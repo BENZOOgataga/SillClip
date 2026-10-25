@@ -96,6 +96,14 @@ public abstract partial class ClipboardHistoryItemViewModelBase
         ? "/WindowSill.ClipboardHistory/Misc/Unpin".GetLocalizedString()
         : "/WindowSill.ClipboardHistory/Misc/Pin".GetLocalizedString();
 
+    public string DeleteTooltip => "/WindowSill.ClipboardHistory/Misc/Delete".GetLocalizedString();
+    public string OpenTooltip => (DetectedDataType switch
+    {
+        DetectedClipboardDataType.File => "/WindowSill.ClipboardHistory/Misc/OpenInFileExplorer",
+        DetectedClipboardDataType.ApplicationLink => "/WindowSill.ClipboardHistory/Misc/OpenApplication",
+        _ => "/WindowSill.ClipboardHistory/Misc/OpenInWebBrowser"
+    }).GetLocalizedString();
+
     /// <summary>
     /// Gets the detected data type for this clipboard item.
     /// Subclasses should override this to return the correct type for paste-as-file support.
@@ -165,35 +173,60 @@ public abstract partial class ClipboardHistoryItemViewModelBase
     }
 
     [RelayCommand]
-    private async Task PasteAsync()
+    private async Task CopyAsync()
     {
-        await ThreadHelper.RunOnUIThreadAsync(async () =>
+        try { await ThreadHelper.RunOnUIThreadAsync(_source.SetAsClipboardContent); }
+        catch (Exception ex) { _logger.LogWarning(ex, "The clipboard item could not be copied."); }
+    }
+
+    [RelayCommand]
+    private Task PasteAsync() => PasteCoreAsync(null);
+
+    internal Task PasteFromPopupAsync(nint window, uint processId) => PasteCoreAsync((window, processId));
+
+    private async Task PasteCoreAsync((nint Window, uint ProcessId)? expectedTarget)
+    {
+        try
         {
-            // Check if the last active window is Explorer/Desktop/FileDialog
-            nint targetHwnd = ExplorerDetector.GetLastActiveWindow();
-            if (targetHwnd != 0 && ExplorerDetector.IsExplorerLikeWindow(targetHwnd))
+            await ThreadHelper.RunOnUIThreadAsync(async () =>
             {
-                string? folderPath = ExplorerFolderResolver.GetCurrentFolderPath(targetHwnd);
-                if (!string.IsNullOrEmpty(folderPath))
+                _source.SetAsClipboardContent();
+                if (expectedTarget is { } expected)
                 {
-                    bool written = await ClipboardFileWriter.TryWriteAsFileAsync(Data, DetectedDataType, folderPath);
-                    if (written)
+                    for (int attempt = 0; attempt < 8 && !PopupInvocationContext.IsTargetActive(expected.Window, expected.ProcessId); attempt++)
                     {
-                        _logger.LogInformation("Pasted clipboard content as file in {Folder}.", folderPath);
-                        return;
+                        if (!PopupInvocationContext.IsOwnWindowActive()) return;
+                        await Task.Delay(16);
+                    }
+                    // If focus went elsewhere, leave the item copied instead of pasting into a different app.
+                    if (!PopupInvocationContext.IsTargetActive(expected.Window, expected.ProcessId)) return;
+                }
+                // Check if the last active window is Explorer/Desktop/FileDialog
+                nint targetHwnd = expectedTarget?.Window ?? ExplorerDetector.GetLastActiveWindow();
+                if (expectedTarget is null && targetHwnd != 0 && ExplorerDetector.IsExplorerLikeWindow(targetHwnd))
+                {
+                    string? folderPath = ExplorerFolderResolver.GetCurrentFolderPath(targetHwnd);
+                    if (!string.IsNullOrEmpty(folderPath))
+                    {
+                        bool written = await ClipboardFileWriter.TryWriteAsFileAsync(Data, DetectedDataType, folderPath);
+                        if (written)
+                        {
+                            _logger.LogInformation("Pasted clipboard content as file in {Folder}.", folderPath);
+                            return;
+                        }
                     }
                 }
-            }
 
-            // Fall back to normal paste via Ctrl+V
-            _source.SetAsClipboardContent();
+                // Fall back to normal paste via Ctrl+V
+                if (expectedTarget is null) await Task.Delay(200);
+                else if (!PopupInvocationContext.IsTargetActive(expectedTarget.Value.Window, expectedTarget.Value.ProcessId)) return;
 
-            await Task.Delay(200);
-
-            await _processInteractionService.SimulateKeysOnLastActiveWindow(
-                VirtualKey.LeftControl,
-                VirtualKey.V);
-        });
+                await _processInteractionService.SimulateKeysOnLastActiveWindow(
+                    VirtualKey.LeftControl,
+                    VirtualKey.V);
+            });
+        }
+        catch (Exception ex) { _logger.LogWarning(ex, "The clipboard item could not be pasted."); }
     }
 
     [RelayCommand]

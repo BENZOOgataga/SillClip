@@ -299,7 +299,7 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
             if (_popupViewModel is null)
             {
                 _popupViewModel = new ClipboardHistoryPopupViewModel(_persistentService);
-                _popupContent = new ClipboardHistoryPopupContent(_popupViewModel, _settingsProvider);
+                _popupContent = new ClipboardHistoryPopupContent(_popupViewModel);
                 var popupItem = new SillListViewPopupItem(
                     new ImageIcon
                     {
@@ -347,7 +347,7 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
             if (_popupViewModel is null)
             {
                 _popupViewModel = new ClipboardHistoryPopupViewModel(_persistentService);
-                _popupContent = new ClipboardHistoryPopupContent(_popupViewModel, _settingsProvider);
+                _popupContent = new ClipboardHistoryPopupContent(_popupViewModel);
                 _searchItem = new SillListViewPopupItem(
                     new FontIcon { Glyph = "\uE721", FontSize = 16, Width = 16, Height = 16 },
                     "/WindowSill.ClipboardHistory/Misc/SearchHistory".GetLocalizedString(),
@@ -443,13 +443,35 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
 
     private void WinVShortcutService_ShortcutPressed(object? sender, EventArgs e)
     {
-        Task.Run(() => ThreadHelper.RunOnUIThreadAsync(ShowSearchPopupAsync)).Forget();
+        OpenFromKeyboardAsync().Forget();
     }
 
-    private async Task ShowSearchPopupAsync()
+    private async Task OpenFromKeyboardAsync()
+    {
+        try
+        {
+            bool closedExisting = false;
+            await ThreadHelper.RunOnUIThreadAsync(() =>
+            {
+                if (_shortcutPopupOpen || _popupContent?.IsOpen == true)
+                {
+                    _shortcutContent?.Close();
+                    _popupContent?.Close();
+                    closedExisting = true;
+                }
+            });
+            if (closedExisting) return;
+            var context = await PopupInvocationContext.CaptureAsync(PopupInvocationContext.ForegroundWindow);
+            await ThreadHelper.RunOnUIThreadAsync(() => ShowSearchPopupAsync(context));
+        }
+        catch (Exception ex) { _logger.LogWarning(ex, "The clipboard popup could not be opened."); }
+    }
+
+    private async Task ShowSearchPopupAsync(PopupInvocationContext context)
     {
         if (_shortcutPopupOpen)
         {
+            _shortcutContent?.Close();
             return;
         }
 
@@ -465,10 +487,11 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
             _popupViewModel.SearchQuery = string.Empty;
             if (_shortcutPopup is null)
             {
-                _shortcutContent = new ClipboardHistoryPopupContent(_popupViewModel, _settingsProvider);
+                _shortcutContent = new ClipboardHistoryPopupContent(_popupViewModel);
                 _shortcutPopup = new SillPopup { Content = _shortcutContent };
             }
 
+            _shortcutContent!.PrepareKeyboardOpen(context);
             await _shortcutPopup.ShowAsync(_popupAnchor);
         }
         catch (InvalidOperationException ex)
@@ -503,6 +526,20 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
     {
         var menuFlyout = new MenuFlyout();
 
+        menuFlyout.Items.Add(new MenuFlyoutItem
+        {
+            Text = "/WindowSill.ClipboardHistory/Misc/Paste".GetLocalizedString(),
+            Icon = new SymbolIcon(Symbol.Paste),
+            Command = viewModel.PasteCommand
+        });
+        menuFlyout.Items.Add(new MenuFlyoutItem
+        {
+            Text = "/WindowSill.ClipboardHistory/Misc/Copy".GetLocalizedString(),
+            Icon = new SymbolIcon(Symbol.Copy),
+            Command = viewModel.CopyCommand
+        });
+        menuFlyout.Items.Add(new MenuFlyoutSeparator());
+
         if (viewModel.IsPinned)
         {
             menuFlyout.Items.Add(new MenuFlyoutItem
@@ -528,13 +565,14 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
                 Icon = new SymbolIcon(Symbol.Clear),
                 Command = viewModel.ClearCommand
             });
-            menuFlyout.Items.Add(new MenuFlyoutItem
-            {
-                Text = "/WindowSill.ClipboardHistory/Misc/Delete".GetLocalizedString(),
-                Icon = new SymbolIcon(Symbol.Delete),
-                Command = viewModel.DeleteCommand
-            });
         }
+
+        menuFlyout.Items.Add(new MenuFlyoutItem
+        {
+            Text = "/WindowSill.ClipboardHistory/Misc/Delete".GetLocalizedString(),
+            Icon = new SymbolIcon(Symbol.Delete),
+            Command = viewModel.DeleteCommand
+        });
 
         view.ContextFlyout = menuFlyout;
     }

@@ -192,4 +192,9 @@
   <data name="CheckNow" xml:space="preserve">
     <value>Check now</value>
   </data>
+  <data name="ClipboardTitle" xml:space="preserve"><value>Clipboard</value></data>
+  <data name="Copy" xml:space="preserve"><value>Copy</value></data>
+  <data name="Paste" xml:space="preserve"><value>Paste</value></data>
+  <data name="Close" xml:space="preserve"><value>Close</value></data>
+  <data name="ClearAll" xml:space="preserve"><value>Clear all</value></data>
 </root>
