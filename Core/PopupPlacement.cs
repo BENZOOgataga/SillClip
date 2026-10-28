@@ -1,7 +1,16 @@
 namespace WindowSill.ClipboardHistory.Core;
 
+internal readonly record struct ScreenPoint(int X, int Y);
+internal readonly record struct ScreenRect(int X, int Y, int Width, int Height);
+
 internal static class PopupPlacement
 {
+    internal static ScreenRect? CaretOnPointerMonitor(ScreenRect? caret, ScreenRect monitor)
+        => caret is { Width: > 0, Height: > 0 } rect
+        && rect.X >= monitor.X && (long)rect.X < (long)monitor.X + monitor.Width
+        && rect.Y >= monitor.Y && (long)rect.Y < (long)monitor.Y + monitor.Height
+            ? rect : null;
+
     internal static (int X, int Y) Automatic(int? caretX, int? caretY, int caretHeight,
         int width, int height, int workX, int workY, int workWidth, int workHeight, int margin)
     {

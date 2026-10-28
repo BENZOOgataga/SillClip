@@ -1,6 +1,6 @@
 # Win+V behavior audit
 
-Reviewed for version 0.10.1 on Windows 11 with WindowSill 1.0.3. This compares the fork with documented Windows clipboard behavior and records the limits of the comparison.
+Reviewed for version 0.10.2 on Windows 11 with WindowSill 1.0.3. This compares the fork with documented Windows clipboard behavior and records the limits of the comparison.
 
 ## Native behavior and evidence
 
@@ -12,6 +12,7 @@ Microsoft Q&A contains reports of the native picker appearing beside the text ca
 
 | Finding | Change in this release |
 | --- | --- |
+| Successive openings could switch monitors when caret lookup failed or focus returned to WindowSill. | The pointer snapshot selects the monitor. A caret on another display is ignored, and missing caret geometry falls back to the pointer. |
 | The popup opened at the WindowSill bar, then jumped to saved coordinates. | Initial native placement is corrected while the popup is hidden. Saved coordinates are no longer used. |
 | Opening waited for the Windows key to be released. | The first Win+V keydown queues opening. Repeats and the matching V keyup are suppressed; ordinary keys pass through. |
 | The popup looked like a dense bar list. | The 360 by 400 logical pixel popup uses multiline cards, a search field, Clear all, and a close button. |
@@ -25,9 +26,9 @@ Microsoft Q&A contains reports of the native picker appearing beside the text ca
 
 ## Placement policy
 
-The fork captures the foreground window before opening. It first asks GetGUIThreadInfo for the caret rectangle, then tries MSAA caret geometry with a 40 ms wait budget. A provider that has not returned blocks further MSAA probes, rather than accumulating worker threads. Only geometry is requested.
+The fork captures the foreground window and mouse position before queuing UI work. The mouse position selects the monitor for the whole invocation. For an external foreground window, it asks GetGUIThreadInfo for the caret rectangle, then tries MSAA caret geometry with a 40 ms wait budget. WindowSill's own windows are excluded from caret lookup. A provider that has not returned blocks further MSAA probes, rather than accumulating worker threads. Only geometry is requested.
 
-When a caret is available, the popup opens below it, or above it when space is insufficient. Without a caret, it uses the lower-right work area of the active window's monitor. This fallback is a fork policy. Coordinates are clamped to the work area and dimensions are scaled for the target display. Dragging is available for the current opening; the next invocation computes a new position.
+When a caret is on the pointer's monitor, the popup opens below it, or above it when space is insufficient. Without a suitable caret, it opens near the captured pointer position on that same display. Coordinates are clamped to the work area and dimensions are scaled for the target display. Dragging is available for the current opening; the next invocation computes a new position. This is a fork policy, rather than a claim about the Shell's private algorithm. [GetCursorPos](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getcursorpos) supplies screen coordinates and [MonitorFromPoint](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-monitorfrompoint) resolves the display containing them.
 
 The WindowSill SDK owns the popup window and its capture-protection registration. A same-thread native subclass adjusts the SDK's initial move before display. A hidden-window fallback handles hosts that skip WM_WINDOWPOSCHANGING. The callback is removed on closing. If installation fails, the popup uses the host's placement. [GetGUIThreadInfo](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getguithreadinfo), [SetWindowSubclass](https://learn.microsoft.com/en-us/windows/win32/api/commctrl/nf-commctrl-setwindowsubclass), [WM_WINDOWPOSCHANGING](https://learn.microsoft.com/en-us/windows/win32/winmsg/wm-windowposchanging)
 
@@ -36,7 +37,7 @@ The WindowSill SDK owns the popup window and its capture-protection registration
 - Search, persistent unpinned history, and unlimited archive retention are fork features. Emoji and GIF tabs are omitted.
 - The fork imports Windows-accepted history entries. It does not replace the Windows capture backend or guarantee capture of every format and oversized copy.
 - The native popup's overflow menu, including Paste as text, is not reproduced. This popup exposes pin and delete buttons directly.
-- Custom editors may not expose a usable caret. The fallback can therefore differ from the Shell's choice. Native focus routing and animation are not public contracts and have not been reproduced exactly.
+- Custom editors may not expose a usable caret. If the pointer and caret are on different displays, this fork follows the pointer's display. Native focus routing and animation are not public contracts and have not been reproduced exactly.
 - Search takes keyboard focus. Outside-click closing and focus restoration use WindowSill's popup lifecycle, including its deactivation delay.
 - Elevated or protected applications may reject simulated paste. The extension cannot bypass Windows input restrictions.
 - Screen recording protection comes from WindowSill. No Discord stream-state detection is implemented, and protection depends on the capture method.
@@ -46,11 +47,11 @@ The WindowSill SDK owns the popup window and its capture-protection registration
 
 ## Validation
 
-The release has 61 passing regression tests, covering retention, version channels, clipboard signatures, privacy, refresh coalescing, shortcut state, popup navigation, and placement bounds.
+The release has 70 passing regression tests, covering retention, version channels, clipboard signatures, privacy, refresh coalescing, shortcut state, popup navigation, placement bounds, and intermittent or out-of-monitor caret reports.
 
 Release builds map source paths to `/_/`. The packaging script checks required resources, local build paths, diagnostic files, and common secret markers before accepting a package.
 
-A separate native probe exercised the production placement callback on 16 hidden-window cases: caret and fallback placement, 100%, 125%, 150%, and 200% scale, and moves with or without WM_WINDOWPOSCHANGING. It checked final position, dimensions, hidden state, and callback removal. No window was shown and no keyboard input was generated.
+A separate native probe exercised the production placement callback on 80 hidden-window cases at 100%, 125%, 150%, and 200% scale, with and without WM_WINDOWPOSCHANGING. It includes repeated openings on the same native window, alternating valid, absent, and out-of-monitor caret reports on positive and negative display coordinates. It checked final position, dimensions, hidden state, and callback removal. No window was shown and no keyboard input was generated.
 
 Run it with `dotnet run --project tests/NativePlacementProbe -c Release` on Windows. It also runs in CI before packaging.
 

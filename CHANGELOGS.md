@@ -1,3 +1,10 @@
+# 0.10.2
+- Fixed successive Win+V openings switching to another monitor when the mouse had not moved.
+- Captured the mouse position and target window before queuing popup work.
+- Kept caret-based placement on the pointer's monitor and used the pointer position as fallback.
+- Excluded WindowSill's own search caret from placement detection.
+- Added regression coverage for intermittent caret reports and repeated openings on a reused native window.
+
 # 0.10.1
 - Added Paste and Copy to the context menu of bar items.
 - Placed the Win+V popup before its first visible frame, using caret geometry or an active-monitor fallback.

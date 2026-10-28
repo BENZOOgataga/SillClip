@@ -450,6 +450,8 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
     {
         try
         {
+            nint targetWindow = PopupInvocationContext.ForegroundWindow;
+            var pointer = PopupInvocationContext.CapturePointer();
             bool closedExisting = false;
             await ThreadHelper.RunOnUIThreadAsync(() =>
             {
@@ -461,7 +463,7 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
                 }
             });
             if (closedExisting) return;
-            var context = await PopupInvocationContext.CaptureAsync(PopupInvocationContext.ForegroundWindow);
+            var context = await PopupInvocationContext.CaptureAsync(targetWindow, pointer);
             await ThreadHelper.RunOnUIThreadAsync(() => ShowSearchPopupAsync(context));
         }
         catch (Exception ex) { _logger.LogWarning(ex, "The clipboard popup could not be opened."); }

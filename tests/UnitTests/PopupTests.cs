@@ -5,6 +5,39 @@ namespace UnitTests;
 
 public sealed class PopupTests
 {
+    [Theory]
+    [InlineData(-1800, 200, 1, 20, true)]
+    [InlineData(200, 200, 1, 20, false)]
+    [InlineData(-32000, -32000, 1, 20, false)]
+    [InlineData(0, 200, 1, 20, false)]
+    [InlineData(-1920, 0, 1, 20, true)]
+    [InlineData(-1800, 1080, 1, 20, false)]
+    [InlineData(-1800, 200, 0, 20, false)]
+    [InlineData(-1800, 200, 1, 0, false)]
+    public void CaretCannotChooseADifferentMonitor(int x, int y, int width, int height, bool accepted)
+    {
+        var caret = new ScreenRect(x, y, width, height);
+        var result = PopupPlacement.CaretOnPointerMonitor(caret, new(-1920, 0, 1920, 1080));
+        Assert.Equal(accepted ? caret : (ScreenRect?)null, result);
+    }
+
+    [Fact]
+    public void IntermittentCaretAvailabilityKeepsThePointerMonitor()
+    {
+        var monitor = new ScreenRect(-1920, -200, 1920, 1080);
+        var pointer = new ScreenPoint(-1700, 100);
+        ScreenRect?[] reports = [new(-1800, 200, 1, 20), null, new(500, 300, 1, 20), new(-1800, 200, 1, 20)];
+        foreach (var report in reports)
+        {
+            var caret = PopupPlacement.CaretOnPointerMonitor(report, monitor);
+            var point = PopupPlacement.Automatic(caret?.X ?? pointer.X, caret?.Y ?? pointer.Y,
+                caret?.Height ?? 0, 360, 400, monitor.X, monitor.Y, monitor.Width, monitor.Height, 8);
+            Assert.InRange(point.X, monitor.X, monitor.X + monitor.Width - 360);
+            Assert.InRange(point.Y, monitor.Y, monitor.Y + monitor.Height - 400);
+            if (caret is null) Assert.Equal((-1700, 108), point);
+        }
+    }
+
     [Fact]
     public void CaretPlacementUsesSpaceBelowTheInsertionPoint()
         => Assert.Equal((200, 328), PopupPlacement.Automatic(200, 300, 20, 360, 400, 0, 0, 1920, 1080, 8));

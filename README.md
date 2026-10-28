@@ -2,7 +2,7 @@
 
 This project is a focused fork of the official WindowSill Clipboard History extension. It keeps the original interface and clipboard actions, then adds the features needed for histories larger than the Windows limit.
 
-Download the `.wsext` package from the [stable release](https://github.com/BENZOOgataga/WindowSill-NoClipBoardHistoryLimit/releases/tag/v0.10.1). Installation steps are below. You need Windows 11 and WindowSill 1.0.3 or newer.
+Download the `.wsext` package from the [stable release](https://github.com/BENZOOgataga/WindowSill-NoClipBoardHistoryLimit/releases/tag/v0.10.2). Installation steps are below. You need Windows 11 and WindowSill 1.0.3 or newer.
 
 ## What this fork adds
 
@@ -13,7 +13,7 @@ Download the `.wsext` package from the [stable release](https://github.com/BENZO
 - Compact mode includes the same live search field.
 - Win+V opens the searchable WindowSill history instead of the Windows panel.
 - An automatic GitHub Releases check reports when a newer version is available.
-- Win+V places the popup near the text caret when available, with a fallback on the active monitor.
+- Win+V keeps the popup on the mouse pointer's monitor, near a text caret on that display or the pointer itself.
 - Right-click a bar item to choose Paste or Copy.
 
 Pinned items remain separate from the retention limit and stay at the top.
@@ -38,7 +38,7 @@ In expanded mode, the bar keeps the 25 most recent entries visible and the searc
 
 The `Open this history with Win+V` setting is enabled by default. While the extension is active, it intercepts Win+V and opens the searchable WindowSill popup. Disable the setting to restore the standard Windows clipboard panel without uninstalling the extension.
 
-Escape or a second Win+V closes the popup. Up and Down select an item; Enter or a click pastes it. Ctrl+F returns to search. The popup is 360 by 400 logical pixels, constrained to the display's work area. It opens below or above the text caret when Windows exposes one, otherwise near the lower-right corner of the active window's monitor. Drag the heading to move it for the current opening. Each new Win+V invocation chooses its position again.
+Escape or a second Win+V closes the popup. Up and Down select an item; Enter or a click pastes it. Ctrl+F returns to search. The popup is 360 by 400 logical pixels, constrained to the display's work area. Each invocation captures the mouse position before opening. The popup uses that monitor and opens below or above a text caret on the same display, or near the mouse pointer when no suitable caret is available. A caret lookup failure or a WindowSill focus change cannot select another display. Drag the heading to move it for the current opening.
 
 In the WindowSill bar, left-clicking an item pastes it. Right-clicking offers Paste and Copy; Copy updates the clipboard without sending a paste command. If focus changes to another application while the popup closes, the item remains copied and automatic paste is skipped.
 
@@ -63,7 +63,7 @@ To install:
 1. Open WindowSill Settings.
 2. Open Manage Extensions.
 3. Disable the official Clipboard History extension to avoid two active clipboard panels.
-4. Download `WindowSill.ClipboardHistory.NoLimits.0.10.1.wsext` from the [release page](https://github.com/BENZOOgataga/WindowSill-NoClipBoardHistoryLimit/releases/tag/v0.10.1).
+4. Download `WindowSill.ClipboardHistory.NoLimits.0.10.2.wsext` from the [release page](https://github.com/BENZOOgataga/WindowSill-NoClipBoardHistoryLimit/releases/tag/v0.10.2).
 5. Double-click the `.wsext` file in File Explorer.
 6. Accept the WindowSill installation prompt, then enable Clipboard History No Limits if needed.
 

@@ -16,8 +16,8 @@ internal sealed class PopupOpeningPlacement : IDisposable
     private (int X, int Y) DesiredPosition()
     {
         var area = _context.WorkArea;
-        var caret = _context.Caret;
-        return PopupPlacement.Automatic(caret?.X, caret?.Y, caret?.Height ?? 0,
+        var anchor = _context.Anchor;
+        return PopupPlacement.Automatic(anchor?.X, anchor?.Y, anchor?.Height ?? 0,
             _width, _height, area.X, area.Y, area.Width, area.Height, (int)Math.Round(8 * _context.Scale));
     }
 

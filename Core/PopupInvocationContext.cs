@@ -2,23 +2,35 @@ using System.Runtime.InteropServices;
 
 namespace WindowSill.ClipboardHistory.Core;
 
-internal readonly record struct ScreenRect(int X, int Y, int Width, int Height);
-
 internal sealed record PopupInvocationContext(nint TargetWindow, ScreenRect? Caret, ScreenRect WorkArea, double Scale)
 {
     private static int _accessibleProbeRunning;
+    internal ScreenPoint? Pointer { get; init; }
+    internal ScreenRect? Anchor => Caret ?? (Pointer is { } pointer ? new ScreenRect(pointer.X, pointer.Y, 1, 0) : null);
     internal uint TargetProcessId { get; init; }
     internal static nint ForegroundWindow => GetForegroundWindow();
     internal static uint ProcessIdOf(nint window) { GetWindowThreadProcessId(window, out uint id); return id; }
     internal static bool IsTargetActive(nint window, uint processId)
         => window != 0 && processId != 0 && GetForegroundWindow() == window && ProcessIdOf(window) == processId;
     internal static bool IsOwnWindowActive() => ProcessIdOf(GetForegroundWindow()) == Environment.ProcessId;
-    internal static async Task<PopupInvocationContext> CaptureAsync(nint window)
+    internal static ScreenPoint CapturePointer()
     {
+        if (!GetCursorPos(out var point)) throw new InvalidOperationException("The pointer position is unavailable.");
+        return new(point.X, point.Y);
+    }
+
+    internal static async Task<PopupInvocationContext> CaptureAsync(nint window, ScreenPoint pointer)
+    {
+        // Choose the monitor from the invocation snapshot, before a caret provider can time out
+        // or the host can change focus to one of its windows on another display.
+        nint monitor = MonitorFromPoint(new Point { X = pointer.X, Y = pointer.Y }, 2);
+        var info = new MonitorInfo { Size = (uint)Marshal.SizeOf<MonitorInfo>() };
+        if (!GetMonitorInfo(monitor, ref info)) throw new InvalidOperationException("The popup monitor is unavailable.");
         var gui = new GuiThreadInfo { Size = (uint)Marshal.SizeOf<GuiThreadInfo>() };
-        nint focus = window;
+        bool externalWindow = window != 0 && ProcessIdOf(window) != Environment.ProcessId;
+        nint focus = externalWindow ? window : 0;
         ScreenRect? caret = null;
-        if (window != 0 && GetGUIThreadInfo(GetWindowThreadProcessId(window, out _), ref gui))
+        if (externalWindow && GetGUIThreadInfo(GetWindowThreadProcessId(window, out _), ref gui))
         {
             focus = gui.Focus != 0 ? gui.Focus : window;
             if (gui.Caret != 0 && gui.CaretRect.Bottom > gui.CaretRect.Top)
@@ -42,19 +54,11 @@ internal sealed record PopupInvocationContext(nint TargetWindow, ScreenRect? Car
             }
             catch (TimeoutException) { }
         }
-        nint monitor;
-        if (caret is ScreenRect rect)
-        {
-            var native = new Rect { Left = rect.X, Top = rect.Y, Right = rect.X + rect.Width, Bottom = rect.Y + rect.Height };
-            monitor = MonitorFromRect(ref native, 2);
-        }
-        else if (window != 0) monitor = MonitorFromWindow(window, 2);
-        else { GetCursorPos(out var point); monitor = MonitorFromPoint(point, 2); }
-        var info = new MonitorInfo { Size = (uint)Marshal.SizeOf<MonitorInfo>() };
-        if (!GetMonitorInfo(monitor, ref info)) throw new InvalidOperationException("The popup monitor is unavailable.");
+        caret = PopupPlacement.CaretOnPointerMonitor(caret,
+            new(info.Bounds.Left, info.Bounds.Top, info.Bounds.Right - info.Bounds.Left, info.Bounds.Bottom - info.Bounds.Top));
         double scale = GetDpiForMonitor(monitor, 0, out uint dpi, out _) == 0 && dpi > 0 ? dpi / 96.0 : 1;
         return new(window, caret, new(info.Work.Left, info.Work.Top, info.Work.Right - info.Work.Left, info.Work.Bottom - info.Work.Top), scale)
-        { TargetProcessId = ProcessIdOf(window) };
+        { TargetProcessId = ProcessIdOf(window), Pointer = pointer };
     }
 
     private static ScreenRect? ReadAccessibleCaret(nint window)
@@ -90,9 +94,7 @@ internal sealed record PopupInvocationContext(nint TargetWindow, ScreenRect? Car
     [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool GetGUIThreadInfo(uint thread, ref GuiThreadInfo info);
     [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool ClientToScreen(nint window, ref Point point);
     [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool GetCursorPos(out Point point);
-    [DllImport("user32.dll")] private static extern nint MonitorFromWindow(nint window, uint flags);
     [DllImport("user32.dll")] private static extern nint MonitorFromPoint(Point point, uint flags);
-    [DllImport("user32.dll")] private static extern nint MonitorFromRect(ref Rect rect, uint flags);
     [DllImport("user32.dll", EntryPoint = "GetMonitorInfoW")] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool GetMonitorInfo(nint monitor, ref MonitorInfo info);
     [DllImport("shcore.dll")] private static extern int GetDpiForMonitor(nint monitor, int type, out uint x, out uint y);
     [DllImport("oleacc.dll")] private static extern int AccessibleObjectFromWindow(nint window, uint id, ref Guid iid, [MarshalAs(UnmanagedType.Interface)] out object? accessible);

@@ -31,7 +31,40 @@ foreach (uint moveFlags in new uint[] { 0x14, 0x414 })
     }
     finally { DestroyWindow(window); }
 }
-Console.WriteLine($"{cases} native hidden-window placement cases passed at 100%, 125%, 150%, and 200% scale. No window was shown and no keyboard input was generated.");
+foreach (double scale in new[] { 1.0, 1.25, 1.5, 2.0 })
+foreach (uint moveFlags in new uint[] { 0x14, 0x414 })
+foreach (int monitorX in new[] { -1920, 3840 })
+{
+    nint window = CreateWindowEx(0, "STATIC", "Reused hidden placement probe", 0x80000000, 0, 0, 32, 32, 0, 0, 0, 0);
+    if (window == 0) throw new Exception("Probe window creation failed.");
+    try
+    {
+        var area = new ScreenRect(monitorX, -200, 1920, 1080);
+        var pointer = new ScreenPoint(monitorX + 200, 100);
+        ScreenRect?[] reports = [new(monitorX + 100, 200, 1, 20), null, new(500, 300, 1, 20), new(monitorX + 100, 200, 1, 20)];
+        foreach (var report in reports)
+        {
+            var context = new PopupInvocationContext(0, PopupPlacement.CaretOnPointerMonitor(report, area), area, scale) { Pointer = pointer };
+            using (var placement = new PopupOpeningPlacement(window, context, 360, 400))
+            {
+                // The host reuses the same HWND and starts every opening at its bar on another display.
+                SetWindowPos(window, 0, 50, 60, 360, 400, moveFlags);
+                GetWindowRect(window, out var actual);
+                int width = (int)Math.Round(360 * scale), height = (int)Math.Round(400 * scale);
+                var anchor = context.Anchor!.Value;
+                var expected = PopupPlacement.Automatic(anchor.X, anchor.Y, anchor.Height,
+                    width, height, area.X, area.Y, area.Width, area.Height, (int)Math.Round(8 * scale));
+                if (actual.Left != expected.X || actual.Top != expected.Y || actual.Right - actual.Left != width
+                    || actual.Bottom - actual.Top != height || IsWindowVisible(window)
+                    || actual.Left < area.X || actual.Right > area.X + area.Width)
+                    throw new Exception("Reopening changed the pointer monitor or lost placement.");
+            }
+            cases++;
+        }
+    }
+    finally { DestroyWindow(window); }
+}
+Console.WriteLine($"{cases} native hidden-window placement cases passed, including repeated openings on a reused HWND, at 100%, 125%, 150%, and 200% scale. No window was shown and no keyboard input was generated.");
 
 [DllImport("user32.dll", EntryPoint="CreateWindowExW", CharSet=CharSet.Unicode)] static extern nint CreateWindowEx(uint exStyle, string cls, string title, uint style, int x, int y, int width, int height, nint parent, nint menu, nint instance, nint param);
 [DllImport("user32.dll")] static extern bool DestroyWindow(nint window);
