@@ -19,6 +19,7 @@ internal sealed partial class ClipboardHistoryPopupContent : SillPopupContent
     private PopupInvocationContext? _invocation;
     private PopupOpeningPlacement? _openingPlacement;
     private bool _pasteInProgress;
+    private int _openingGeneration;
     private nint _targetWindow;
     private uint _targetProcessId;
     private AppWindow? _dragWindow;
@@ -61,7 +62,11 @@ internal sealed partial class ClipboardHistoryPopupContent : SillPopupContent
     {
         base.OnOpening();
         IsOpen = true;
+        int opening = ++_openingGeneration;
         _pasteInProgress = false;
+        ViewModel.SearchQuery = string.Empty;
+        // An unchanged empty query does not run the generated property-change callback.
+        ViewModel.RefreshFilter();
         _targetWindow = _invocation?.TargetWindow ?? ExplorerDetector.GetLastActiveWindow();
         _targetProcessId = _invocation?.TargetProcessId ?? PopupInvocationContext.ProcessIdOf(_targetWindow);
         ViewModel.Items.CollectionChanged += Items_CollectionChanged;
@@ -72,18 +77,20 @@ internal sealed partial class ClipboardHistoryPopupContent : SillPopupContent
             try { _openingPlacement = new PopupOpeningPlacement(window, _invocation, Width, Height); }
             catch (Exception ex) { this.Log().LogWarning(ex, "Automatic popup placement is unavailable; using the host placement."); }
         }
-        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+        DispatcherQueue.TryEnqueue(() =>
         {
-            if (!IsOpen) return;
-            ClipboardItems.SelectedIndex = ViewModel.Items.Count > 0 ? 0 : -1;
-            if (ClipboardItems.SelectedItem is not null) ClipboardItems.ScrollIntoView(ClipboardItems.SelectedItem);
+            if (!IsOpen || opening != _openingGeneration) return;
+            // Move focus off the previous item before changing its selection and scroll position.
             SearchBox.Focus(FocusState.Programmatic);
+            ClipboardItems.SelectedIndex = ViewModel.Items.Count > 0 ? 0 : -1;
+            ClipboardItems.ResetScrollToTop();
         });
     }
 
     public override void OnClosing()
     {
         IsOpen = false;
+        ++_openingGeneration;
         ViewModel.Items.CollectionChanged -= Items_CollectionChanged;
         _openingPlacement?.Dispose();
         _openingPlacement = null;

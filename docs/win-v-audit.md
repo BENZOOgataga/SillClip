@@ -1,6 +1,6 @@
 # Win+V behavior audit
 
-Reviewed for version 0.10.2 on Windows 11 with WindowSill 1.0.3. This compares the fork with documented Windows clipboard behavior and records the limits of the comparison.
+Reviewed for version 0.10.3 on Windows 11 with WindowSill 1.0.3. This compares the fork with documented Windows clipboard behavior and records the limits of the comparison.
 
 ## Native behavior and evidence
 
@@ -12,6 +12,7 @@ Microsoft Q&A contains reports of the native picker appearing beside the text ca
 
 | Finding | Change in this release |
 | --- | --- |
+| Reopening after many copies could show an old scroll position. | Each opening clears search, updates the virtualized layout, aligns the first item, and resets the scroll offset without animation. Stale opening callbacks are ignored. |
 | Successive openings could switch monitors when caret lookup failed or focus returned to WindowSill. | The pointer snapshot selects the monitor. A caret on another display is ignored, and missing caret geometry falls back to the pointer. |
 | The popup opened at the WindowSill bar, then jumped to saved coordinates. | Initial native placement is corrected while the popup is hidden. Saved coordinates are no longer used. |
 | Opening waited for the Windows key to be released. | The first Win+V keydown queues opening. Repeats and the matching V keyup are suppressed; ordinary keys pass through. |
@@ -54,5 +55,7 @@ Release builds map source paths to `/_/`. The packaging script checks required r
 A separate native probe exercised the production placement callback on 80 hidden-window cases at 100%, 125%, 150%, and 200% scale, with and without WM_WINDOWPOSCHANGING. It includes repeated openings on the same native window, alternating valid, absent, and out-of-monitor caret reports on positive and negative display coordinates. It checked final position, dimensions, hidden state, and callback removal. No window was shown and no keyboard input was generated.
 
 Run it with `dotnet run --project tests/NativePlacementProbe -c Release` on Windows. It also runs in CI before packaging.
+
+The 0.10.3 scroll reset builds against WinUI 3. The existing unit and native placement tests do not provide an end-to-end test of the popup's scroll position.
 
 The earlier hook probe passed 32 concurrent startup and shutdown cycles without generating input. These checks do not establish full visual parity or cover an extended gameplay session, every editor, IME input, every multi-monitor transition, or every capture mode. Those remain manual compatibility checks.

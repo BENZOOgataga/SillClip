@@ -2,7 +2,7 @@
 
 This project is a focused fork of the official WindowSill Clipboard History extension. It keeps the original interface and clipboard actions, then adds the features needed for histories larger than the Windows limit.
 
-Download the `.wsext` package from the [stable release](https://github.com/BENZOOgataga/WindowSill-NoClipBoardHistoryLimit/releases/tag/v0.10.2). Installation steps are below. You need Windows 11 and WindowSill 1.0.3 or newer.
+Download the `.wsext` package from the [stable release](https://github.com/BENZOOgataga/WindowSill-NoClipBoardHistoryLimit/releases/tag/v0.10.3). Installation steps are below. You need Windows 11 and WindowSill 1.0.3 or newer.
 
 ## What this fork adds
 
@@ -40,6 +40,8 @@ The `Open this history with Win+V` setting is enabled by default. While the exte
 
 Escape or a second Win+V closes the popup. Up and Down select an item; Enter or a click pastes it. Ctrl+F returns to search. The popup is 360 by 400 logical pixels, constrained to the display's work area. Each invocation captures the mouse position before opening. The popup uses that monitor and opens below or above a text caret on the same display, or near the mouse pointer when no suitable caret is available. A caret lookup failure or a WindowSill focus change cannot select another display. Drag the heading to move it for the current opening.
 
+Each opening clears the previous search and returns to the top of the history. Pinned items stay first, followed by recent copies. Scrolling during the current opening remains available.
+
 In the WindowSill bar, left-clicking an item pastes it. Right-clicking offers Paste and Copy; Copy updates the clipboard without sending a paste command. If focus changes to another application while the popup closes, the item remains copied and automatic paste is skipped.
 
 See the [Win+V audit](docs/win-v-audit.md) for the native behavior comparison, test coverage, and remaining differences.
@@ -63,7 +65,7 @@ To install:
 1. Open WindowSill Settings.
 2. Open Manage Extensions.
 3. Disable the official Clipboard History extension to avoid two active clipboard panels.
-4. Download `WindowSill.ClipboardHistory.NoLimits.0.10.2.wsext` from the [release page](https://github.com/BENZOOgataga/WindowSill-NoClipBoardHistoryLimit/releases/tag/v0.10.2).
+4. Download `WindowSill.ClipboardHistory.NoLimits.0.10.3.wsext` from the [release page](https://github.com/BENZOOgataga/WindowSill-NoClipBoardHistoryLimit/releases/tag/v0.10.3).
 5. Double-click the `.wsext` file in File Explorer.
 6. Accept the WindowSill installation prompt, then enable Clipboard History No Limits if needed.
 

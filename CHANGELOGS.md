@@ -1,3 +1,9 @@
+# 0.10.3
+- Reset the popup to the top on every opening, including after copies arrive while it is hidden.
+- Cleared previous search text for openings from both Win+V and the bar.
+- Updated layout before scrolling and set the scroll offset to zero without animation.
+- Prevented an opening callback from running after that popup has closed or reopened.
+
 # 0.10.2
 - Fixed successive Win+V openings switching to another monitor when the mouse had not moved.
 - Captured the mouse position and target window before queuing popup work.
