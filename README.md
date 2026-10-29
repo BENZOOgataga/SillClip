@@ -1,8 +1,8 @@
-# WindowSill Clipboard History: No Limits
+# SillClip
 
-This project is a focused fork of the official WindowSill Clipboard History extension. It keeps the original interface and clipboard actions, then adds the features needed for histories larger than the Windows limit.
+SillClip is a free fork of the official WindowSill Clipboard History extension. It adds unlimited archive retention, search, encrypted local storage, and a Win+V popup. The extension appears in WindowSill as Clipboard History No Limits.
 
-Download the `.wsext` package from the [stable release](https://github.com/BENZOOgataga/WindowSill-NoClipBoardHistoryLimit/releases/tag/v0.10.3). Installation steps are below. You need Windows 11 and WindowSill 1.0.3 or newer.
+Download the `.wsext` package from the [stable release](https://github.com/BENZOOgataga/SillClip/releases/tag/v0.10.4). Installation steps are below. You need Windows 11 and WindowSill 1.0.3 or newer.
 
 ## What this fork adds
 
@@ -65,7 +65,7 @@ To install:
 1. Open WindowSill Settings.
 2. Open Manage Extensions.
 3. Disable the official Clipboard History extension to avoid two active clipboard panels.
-4. Download `WindowSill.ClipboardHistory.NoLimits.0.10.3.wsext` from the [release page](https://github.com/BENZOOgataga/WindowSill-NoClipBoardHistoryLimit/releases/tag/v0.10.3).
+4. Download `WindowSill.ClipboardHistory.NoLimits.0.10.4.wsext` from the [release page](https://github.com/BENZOOgataga/SillClip/releases/tag/v0.10.4).
 5. Double-click the `.wsext` file in File Explorer.
 6. Accept the WindowSill installation prompt, then enable Clipboard History No Limits if needed.
 

@@ -1,3 +1,8 @@
+# 0.10.4
+- Renamed the GitHub repository to SillClip and updated project links.
+- Updated GitHub release checks to accept links for the new repository name and the legacy alias.
+- Kept the extension package ID and encrypted history folders unchanged.
+
 # 0.10.3
 - Reset the popup to the top on every opening, including after copies arrive while it is hidden.
 - Cleared previous search text for openings from both Win+V and the bar.

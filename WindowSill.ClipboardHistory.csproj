@@ -2,7 +2,7 @@
     <PropertyGroup>
         <PackageId>WindowSill.ClipboardHistory.NoLimits</PackageId>
         <AssemblyName>WindowSill.ClipboardHistory</AssemblyName>
-        <Version>0.10.3</Version>
+        <Version>0.10.4</Version>
         <Authors>Etienne Baudoux, BENZOOgataga</Authors>
         <Title>Clipboard History No Limits</Title>
         <Description>
@@ -13,8 +13,8 @@
         <PackageIcon>Assets/package.png</PackageIcon>
         <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
         <PackageReadmeFile>README.md</PackageReadmeFile>
-        <PackageProjectUrl>https://github.com/BENZOOgataga/WindowSill-NoClipBoardHistoryLimit</PackageProjectUrl>
-      <RepositoryUrl>https://github.com/BENZOOgataga/WindowSill-NoClipBoardHistoryLimit</RepositoryUrl>
+        <PackageProjectUrl>https://github.com/BENZOOgataga/SillClip</PackageProjectUrl>
+      <RepositoryUrl>https://github.com/BENZOOgataga/SillClip</RepositoryUrl>
     </PropertyGroup>
     <ItemGroup>
         <Content Remove="Assets/package.png" />

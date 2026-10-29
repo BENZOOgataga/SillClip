@@ -13,9 +13,6 @@ namespace WindowSill.ClipboardHistory.Services;
 [Export(typeof(GitHubUpdateService))]
 internal sealed class GitHubUpdateService
 {
-    private const string LatestReleaseApi =
-        "https://api.github.com/repos/BENZOOgataga/WindowSill-NoClipBoardHistoryLimit/releases?per_page=100";
-
     private static readonly HttpClient HttpClient = CreateHttpClient();
     private readonly SemaphoreSlim _semaphore = new(1, 1);
     private bool _checked;
@@ -69,7 +66,7 @@ internal sealed class GitHubUpdateService
             CheckFailed = false;
             StatusChanged?.Invoke(this, EventArgs.Empty);
 
-            using HttpResponseMessage response = await HttpClient.GetAsync(LatestReleaseApi, cancellationToken);
+            using HttpResponseMessage response = await HttpClient.GetAsync(ReleaseRepository.ReleasesApi, cancellationToken);
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
                 LatestVersion = null;
@@ -97,9 +94,7 @@ internal sealed class GitHubUpdateService
             }
 
             LatestVersion = release?.TagName?.TrimStart('v', 'V');
-            LatestReleaseUri = Uri.TryCreate(release?.HtmlUrl, UriKind.Absolute, out Uri? uri)
-                && uri.Scheme == Uri.UriSchemeHttps && uri.Host == "github.com"
-                && uri.AbsolutePath.StartsWith("/BENZOOgataga/WindowSill-NoClipBoardHistoryLimit/releases/", StringComparison.OrdinalIgnoreCase) ? uri : null;
+            LatestReleaseUri = ReleaseRepository.GetReleaseUri(release?.HtmlUrl);
             _checked = true;
             _lastCheck = DateTimeOffset.UtcNow;
         }
@@ -129,7 +124,7 @@ internal sealed class GitHubUpdateService
         {
             Timeout = TimeSpan.FromSeconds(10)
         };
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("WindowSill-NoClipboardHistoryLimit/1.0");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("SillClip/1.0");
         client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
         return client;
     }
