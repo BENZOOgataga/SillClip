@@ -2,6 +2,8 @@
 
 SillClip is a free fork of the official WindowSill Clipboard History extension. It adds unlimited archive retention, search, encrypted local storage, and a Win+V popup. The extension appears in WindowSill as Clipboard History No Limits.
 
+![SillClip settings showing unlimited history, encrypted persistence, and the Win+V shortcut.](Screenshots/settings.png)
+
 Download the `.wsext` package from the [stable release](https://github.com/BENZOOgataga/SillClip/releases/tag/v0.10.4). Installation steps are below. You need Windows 11 and WindowSill 1.0.3 or newer.
 
 ## What this fork adds
