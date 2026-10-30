@@ -16,13 +16,15 @@ public abstract partial class ClipboardHistoryItemViewModelBase
     IEquatable<ClipboardHistoryItemViewModelBase>
 {
     private readonly ILogger _logger;
-    private readonly IProcessInteractionService _processInteractionService;
+    private readonly ClipboardPasteService _pasteService;
     private readonly IClipboardItemSource _source;
 
     private PinnedClipboardService? _pinnedService;
     private PersistentClipboardService? _persistentService;
     private ClipboardHistoryDataService? _clipboardDataService;
     private ClipboardItemData? _itemData;
+    private ClipboardWorkspaceService? _workspace;
+    private bool _hidePasswords;
 
     internal ClipboardHistoryItemViewModelBase(
         IProcessInteractionService processInteractionService,
@@ -32,7 +34,7 @@ public abstract partial class ClipboardHistoryItemViewModelBase
         Guard.IsNotNull(processInteractionService);
         Guard.IsNotNull(source);
         _logger = this.Log();
-        _processInteractionService = processInteractionService;
+        _pasteService = new ClipboardPasteService(processInteractionService);
         _source = source;
     }
 
@@ -42,7 +44,69 @@ public abstract partial class ClipboardHistoryItemViewModelBase
     public partial string SearchText { get; private set; } = string.Empty;
 
     internal void ConfigurePrivacy(bool hidePasswords)
-        => InitializeSearchTextAsync(hidePasswords).Forget();
+    {
+        _hidePasswords = hidePasswords;
+        InitializeSearchTextAsync(hidePasswords).Forget();
+    }
+
+    internal void ConfigureWorkspace(ClipboardWorkspaceService workspace) => _workspace = workspace;
+    internal ClipboardItemData ItemData => _itemData ?? throw new InvalidOperationException("The clipboard item has not been initialized.");
+    public string ContentSignature => _itemData?.ContentSignature ?? string.Empty;
+    public DateTimeOffset CapturedAt => _itemData?.CapturedAt ?? DateTimeOffset.MinValue;
+    public string CapturedAtText => CapturedAt.LocalDateTime.ToString("g");
+    public string TypeName => (_itemData?.DataType ?? DetectedDataType).ToString();
+    public bool CanTransformText => (_itemData?.DataType ?? DetectedDataType) is DetectedClipboardDataType.Text or DetectedClipboardDataType.Html
+        or DetectedClipboardDataType.Rtf or DetectedClipboardDataType.Uri or DetectedClipboardDataType.Color;
+    public string Summary
+    {
+        get
+        {
+            string text = SearchText.Replace('\r', ' ').Replace('\n', ' ').Trim();
+            return text.Length > 180 ? text[..180] + "..." : string.IsNullOrEmpty(text) ? TypeName : text;
+        }
+    }
+
+    partial void OnSearchTextChanged(string value) => OnPropertyChanged(nameof(Summary));
+
+    internal void UpdateItemData(ClipboardItemData item)
+    {
+        _itemData = item;
+        OnPropertyChanged(nameof(CapturedAt));
+        OnPropertyChanged(nameof(CapturedAtText));
+        OnPropertyChanged(nameof(TypeName));
+        OnPropertyChanged(nameof(CanTransformText));
+    }
+
+    private IClipboardItemSource EffectiveSource => _workspace?.Resolve(ContentSignature).Source ?? _source;
+
+    internal async Task<string> ReadComparisonTextAsync()
+    {
+        string text = await ClipboardPasteService.ReadTextAsync(EffectiveSource);
+        if (_hidePasswords && ClipboardPrivacy.LooksSensitive(text))
+            throw new InvalidOperationException("This item is hidden by the Hide passwords setting.");
+        return text;
+    }
+
+    internal async Task CopyTransformedAsync(ClipboardTextTransform transform, CancellationToken cancellationToken = default)
+    {
+        var source = EffectiveSource;
+        string? text = transform == ClipboardTextTransform.Original ? null
+            : ClipboardTextTransforms.Apply(await ClipboardPasteService.ReadTextAsync(source), transform);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (_workspace?.State.PresentationMode == true) throw new InvalidOperationException("Presentation mode is enabled.");
+        await _pasteService.CopyAsync(source, text);
+    }
+
+    internal async Task<bool> PasteTransformedAsync(ClipboardTextTransform transform, nint window, uint processId)
+    {
+        var source = EffectiveSource;
+        string? text = transform == ClipboardTextTransform.Original ? null
+            : ClipboardTextTransforms.Apply(await ClipboardPasteService.ReadTextAsync(source), transform);
+        return await _pasteService.PasteAsync(source, ItemData.DataType, (window, processId), text);
+    }
+
+    internal Task<bool> PasteCombinedTextAsync(string text, nint window, uint processId)
+        => _pasteService.PasteAsync(EffectiveSource, ItemData.DataType, (window, processId), text);
 
     /// <summary>
     /// Gets whether the item this view model represents is pinned.
@@ -175,63 +239,26 @@ public abstract partial class ClipboardHistoryItemViewModelBase
     [RelayCommand]
     private async Task CopyAsync()
     {
-        try { await ThreadHelper.RunOnUIThreadAsync(_source.SetAsClipboardContent); }
+        try { await CopyTransformedAsync(ClipboardTextTransform.Original); }
         catch (Exception ex) { _logger.LogWarning(ex, "The clipboard item could not be copied."); }
     }
 
     [RelayCommand]
-    private Task PasteAsync() => PasteCoreAsync(null);
-
-    internal Task PasteFromPopupAsync(nint window, uint processId) => PasteCoreAsync((window, processId));
-
-    private async Task PasteCoreAsync((nint Window, uint ProcessId)? expectedTarget)
+    private async Task PasteAsync()
     {
-        try
-        {
-            await ThreadHelper.RunOnUIThreadAsync(async () =>
-            {
-                _source.SetAsClipboardContent();
-                if (expectedTarget is { } expected)
-                {
-                    for (int attempt = 0; attempt < 8 && !PopupInvocationContext.IsTargetActive(expected.Window, expected.ProcessId); attempt++)
-                    {
-                        if (!PopupInvocationContext.IsOwnWindowActive()) return;
-                        await Task.Delay(16);
-                    }
-                    // If focus went elsewhere, leave the item copied instead of pasting into a different app.
-                    if (!PopupInvocationContext.IsTargetActive(expected.Window, expected.ProcessId)) return;
-                }
-                // Check if the last active window is Explorer/Desktop/FileDialog
-                nint targetHwnd = expectedTarget?.Window ?? ExplorerDetector.GetLastActiveWindow();
-                if (expectedTarget is null && targetHwnd != 0 && ExplorerDetector.IsExplorerLikeWindow(targetHwnd))
-                {
-                    string? folderPath = ExplorerFolderResolver.GetCurrentFolderPath(targetHwnd);
-                    if (!string.IsNullOrEmpty(folderPath))
-                    {
-                        bool written = await ClipboardFileWriter.TryWriteAsFileAsync(Data, DetectedDataType, folderPath);
-                        if (written)
-                        {
-                            _logger.LogInformation("Pasted clipboard content as file in {Folder}.", folderPath);
-                            return;
-                        }
-                    }
-                }
-
-                // Fall back to normal paste via Ctrl+V
-                if (expectedTarget is null) await Task.Delay(200);
-                else if (!PopupInvocationContext.IsTargetActive(expectedTarget.Value.Window, expectedTarget.Value.ProcessId)) return;
-
-                await _processInteractionService.SimulateKeysOnLastActiveWindow(
-                    VirtualKey.LeftControl,
-                    VirtualKey.V);
-            });
-        }
+        try { await _pasteService.PasteAsync(EffectiveSource, DetectedDataType, null); }
         catch (Exception ex) { _logger.LogWarning(ex, "The clipboard item could not be pasted."); }
     }
 
+    internal Task<bool> PasteFromPopupAsync(nint window, uint processId)
+        => PasteTransformedAsync(ClipboardTextTransform.Original, window, processId);
+
     [RelayCommand]
-    private async Task DeleteAsync()
+    private Task DeleteAsync() => RunMutationAsync(DeleteCoreAsync);
+
+    private async Task DeleteCoreAsync()
     {
+        if (_workspace is not null) { await _workspace.DeleteAsync([ItemData]); return; }
         await ThreadHelper.RunOnUIThreadAsync(() =>
         {
             _source.DeleteFromHistory();
@@ -247,8 +274,11 @@ public abstract partial class ClipboardHistoryItemViewModelBase
     }
 
     [RelayCommand]
-    private async Task ClearAsync()
+    private Task ClearAsync() => RunMutationAsync(ClearCoreAsync);
+
+    private async Task ClearCoreAsync()
     {
+        if (_workspace is not null) { await _workspace.ClearUnpinnedAsync(); return; }
         await ThreadHelper.RunOnUIThreadAsync(() =>
         {
             Clipboard.ClearHistory();
@@ -261,8 +291,11 @@ public abstract partial class ClipboardHistoryItemViewModelBase
     }
 
     [RelayCommand]
-    private async Task PinAsync()
+    private Task PinAsync() => RunMutationAsync(PinCoreAsync);
+
+    private async Task PinCoreAsync()
     {
+        if (_workspace is not null) { if (!IsPinned) await _workspace.TogglePinAsync(ItemData); return; }
         if (_pinnedService is null || _itemData is null)
         {
             return;
@@ -272,8 +305,11 @@ public abstract partial class ClipboardHistoryItemViewModelBase
     }
 
     [RelayCommand]
-    private async Task UnpinAsync()
+    private Task UnpinAsync() => RunMutationAsync(UnpinCoreAsync);
+
+    private async Task UnpinCoreAsync()
     {
+        if (_workspace is not null) { if (IsPinned) await _workspace.TogglePinAsync(ItemData); return; }
         if (_pinnedService is null)
         {
             return;
@@ -293,5 +329,11 @@ public abstract partial class ClipboardHistoryItemViewModelBase
         {
             await PinAsync();
         }
+    }
+
+    private async Task RunMutationAsync(Func<Task> action)
+    {
+        try { await action(); }
+        catch (Exception ex) { _logger.LogWarning("A clipboard library action failed ({ErrorType}).", ex.GetType().Name); }
     }
 }

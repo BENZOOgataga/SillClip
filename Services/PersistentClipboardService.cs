@@ -20,14 +20,36 @@ internal sealed class PersistentClipboardService
 
     [ImportingConstructor]
     public PersistentClipboardService(IPluginInfo pluginInfo)
+        : this(ClipboardDataMigration.ForkFolder(pluginInfo.GetPluginDataFolder()), typeof(PersistentClipboardService).Log()) { }
+
+    internal PersistentClipboardService(string dataFolder, ILogger logger)
     {
-        _logger = this.Log();
-        _dataFolder = ClipboardDataMigration.ForkFolder(pluginInfo.GetPluginDataFolder());
+        _logger = logger;
+        _dataFolder = dataFolder;
         _store = new PinnedClipboardStore(_dataFolder, "History");
     }
 
     public event EventHandler? HistoryChanged;
     public IReadOnlyList<ClipboardItemData> GetItems() => Volatile.Read(ref _snapshot);
+    internal PinnedClipboardStore Store => _store;
+
+    internal async Task<bool> ImportAsync(PinnedClipboardItem model, CancellationToken cancellationToken)
+    {
+        await _gate.WaitAsync(cancellationToken);
+        try
+        {
+            if (_items.ContainsKey(model.ContentSignature)) return false;
+            try { await _store.SaveAsync(model, cancellationToken); }
+            catch { await _store.DeleteAsync(model.Id, CancellationToken.None); throw; }
+            model.ImageBytes = null;
+            _items.Add(model.ContentSignature, CreateData(model));
+            Publish();
+            return true;
+        }
+        finally { _gate.Release(); }
+    }
+
+    internal void NotifyChanged() => HistoryChanged?.Invoke(this, EventArgs.Empty);
 
     public async Task LoadAsync(CancellationToken cancellationToken = default)
     {
@@ -101,20 +123,27 @@ internal sealed class PersistentClipboardService
     }
 
     public async Task DeleteBySignatureAsync(string signature, CancellationToken cancellationToken = default)
+        => await DeleteManyAsync([signature], cancellationToken);
+
+    internal async Task DeleteManyAsync(IEnumerable<string> signatures, CancellationToken cancellationToken = default)
     {
         await _gate.WaitAsync(cancellationToken);
+        var failures = new List<Exception>();
         try
         {
-            _deleted[signature] = DateTimeOffset.UtcNow;
-            if (_items.TryGetValue(signature, out var item))
+            foreach (string signature in signatures)
             {
-                await _store.DeleteAsync(item.Source.Id, cancellationToken);
-                _items.Remove(signature);
-                Publish();
+                cancellationToken.ThrowIfCancellationRequested();
+                _deleted[signature] = DateTimeOffset.UtcNow;
+                if (!_items.TryGetValue(signature, out var item)) continue;
+                try { await _store.DeleteAsync(item.Source.Id, cancellationToken); _items.Remove(signature); }
+                catch (IOException ex) { failures.Add(ex); }
             }
+            Publish();
         }
         finally { _gate.Release(); }
         HistoryChanged?.Invoke(this, EventArgs.Empty);
+        if (failures.Count > 0) throw new AggregateException("Some archive files could not be deleted.", failures);
     }
 
     public async Task ClearAsync(CancellationToken cancellationToken = default)

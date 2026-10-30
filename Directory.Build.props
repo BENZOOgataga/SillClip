@@ -19,5 +19,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="UnitTests" />
+    <InternalsVisibleTo Include="IntegrationTests" />
+    <InternalsVisibleTo Include="UiSmokeProbe" />
   </ItemGroup>
 </Project>

@@ -193,4 +193,119 @@
   <data name="ClearAll" xml:space="preserve"><value>Tout effacer</value></data>
   <data name="Pin" xml:space="preserve"><value>Épingler</value></data>
   <data name="Unpin" xml:space="preserve"><value>Désépingler</value></data>
+  <data name="WorkspaceActionFailed" xml:space="preserve"><value>L'action a échoué. Réessayez ou consultez le journal de WindowSill.</value></data>
+  <data name="WorkspaceAddToQueue" xml:space="preserve"><value>Ajouter la sélection à la file</value></data>
+  <data name="WorkspaceAllItems" xml:space="preserve"><value>Tous les éléments</value></data>
+  <data name="WorkspaceArchiveAuthenticationFailed" xml:space="preserve"><value>Impossible de déverrouiller la sauvegarde. Vérifiez la phrase secrète et l'intégrité du fichier.</value></data>
+  <data name="WorkspaceAssignCollection" xml:space="preserve"><value>Ajouter la sélection à la collection</value></data>
+  <data name="WorkspaceBack" xml:space="preserve"><value>Retour</value></data>
+  <data name="WorkspaceBackup" xml:space="preserve"><value>Sauvegarde</value></data>
+  <data name="WorkspaceBackupHelp" xml:space="preserve"><value>Exportez une sauvegarde chiffrée ou restaurez-en une. Utilisez une phrase secrète d'au moins 12 caractères pour l'export et conservez-la en lieu sûr. Elle ne peut pas être récupérée. L'import ajoute des éléments sans remplacer les éléments existants.</value></data>
+  <data name="WorkspaceBlankLine" xml:space="preserve"><value>Ligne vide</value></data>
+  <data name="WorkspaceBrowse" xml:space="preserve"><value>Parcourir</value></data>
+  <data name="WorkspaceCancel" xml:space="preserve"><value>Annuler</value></data>
+  <data name="WorkspaceCancelled" xml:space="preserve"><value>Opération annulée.</value></data>
+  <data name="WorkspaceCheckInput" xml:space="preserve"><value>Vérifiez votre sélection et les valeurs saisies.</value></data>
+  <data name="WorkspaceChooseCollection" xml:space="preserve"><value>Choisir une collection</value></data>
+  <data name="WorkspaceCleanRange" xml:space="preserve"><value>Supprimer les éléments correspondants</value></data>
+  <data name="WorkspaceCleanUrl" xml:space="preserve"><value>URL sans paramètres de suivi</value></data>
+  <data name="WorkspaceCollectionAssigned" xml:space="preserve"><value>Appartenance à la collection mise à jour.</value></data>
+  <data name="WorkspaceCollectionCreated" xml:space="preserve"><value>Collection créée.</value></data>
+  <data name="WorkspaceCollectionHelp" xml:space="preserve"><value>Sélectionnez des éléments dans Parcourir, puis ajoutez-les à une collection ici. Un élément peut appartenir à plusieurs collections.</value></data>
+  <data name="WorkspaceCollections" xml:space="preserve"><value>Collections</value></data>
+  <data name="WorkspaceCompare" xml:space="preserve"><value>Comparer</value></data>
+  <data name="WorkspaceCompareHelp" xml:space="preserve"><value>Sélectionnez exactement deux textes dans Parcourir. Les lignes commençant par - appartiennent au premier élément, celles commençant par + au second. Les textes protégés ne peuvent pas être comparés.</value></data>
+  <data name="WorkspaceConfirm" xml:space="preserve"><value>Confirmer</value></data>
+  <data name="WorkspaceConfirmPassphrase" xml:space="preserve"><value>Confirmer la phrase secrète (export uniquement)</value></data>
+  <data name="WorkspaceCopied" xml:space="preserve"><value>Copié dans le presse-papiers.</value></data>
+  <data name="WorkspaceCopiedFocusChanged" xml:space="preserve"><value>Copié, mais non collé car la fenêtre cible a changé.</value></data>
+  <data name="WorkspaceCopyDiff" xml:space="preserve"><value>Copier la comparaison</value></data>
+  <data name="WorkspaceCreateCollection" xml:space="preserve"><value>Créer la collection</value></data>
+  <data name="WorkspaceDeleteCollection" xml:space="preserve"><value>Supprimer la collection</value></data>
+  <data name="WorkspaceDeleteCollectionBody" xml:space="preserve"><value>Supprimer cette collection ? Ses éléments seront conservés dans l'historique.</value></data>
+  <data name="WorkspaceDeleteCount" xml:space="preserve"><value>Supprimer {0} éléments de la bibliothèque et de l'historique Windows ? Cette action est irréversible.</value></data>
+  <data name="WorkspaceDeleteEntries" xml:space="preserve"><value>Supprimer des éléments</value></data>
+  <data name="WorkspaceDeleteSelected" xml:space="preserve"><value>Supprimer l'élément sélectionné</value></data>
+  <data name="WorkspaceDiffSummary" xml:space="preserve"><value>{0} lignes ajoutées, {1} supprimées.</value></data>
+  <data name="WorkspaceDiffTruncated" xml:space="preserve"><value>Comparaison abrégée en raison de la taille des textes.</value></data>
+  <data name="WorkspaceExport" xml:space="preserve"><value>Exporter la sauvegarde</value></data>
+  <data name="WorkspaceExportDone" xml:space="preserve"><value>{0} éléments exportés.</value></data>
+  <data name="WorkspaceFileError" xml:space="preserve"><value>Impossible de lire ou d'écrire le fichier. Vérifiez l'espace disque et les droits d'accès.</value></data>
+  <data name="WorkspaceFileReferenceHelp" xml:space="preserve"><value>Le contenu des fichiers n'est jamais inclus. Si cette option est activée, leurs chemins sont exportés et restaurés sous forme de texte. Les chemins distants et de périphériques sont refusés.</value></data>
+  <data name="WorkspaceFileReferences" xml:space="preserve"><value>Inclure les références de fichiers locaux</value></data>
+  <data name="WorkspaceFilterCollection" xml:space="preserve"><value>Afficher la collection dans Parcourir</value></data>
+  <data name="WorkspaceFilters" xml:space="preserve"><value>Filtres de recherche</value></data>
+  <data name="WorkspaceFormatJson" xml:space="preserve"><value>JSON formaté</value></data>
+  <data name="WorkspaceFromDate" xml:space="preserve"><value>Depuis (inclus)</value></data>
+  <data name="WorkspaceImages" xml:space="preserve"><value>Images</value></data>
+  <data name="WorkspaceImagesOnly" xml:space="preserve"><value>Images uniquement</value></data>
+  <data name="WorkspaceImport" xml:space="preserve"><value>Importer une sauvegarde</value></data>
+  <data name="WorkspaceImportConfirmation" xml:space="preserve"><value>Restaurer cette sauvegarde chiffrée ? Les éléments existants seront conservés. Les textes et liens restaurés peuvent contenir des informations sensibles. Importez uniquement une sauvegarde de confiance.</value></data>
+  <data name="WorkspaceImportDone" xml:space="preserve"><value>{0} ajoutés, {1} déjà présents, {2} ignorés.</value></data>
+  <data name="WorkspaceIncludePins" xml:space="preserve"><value>Inclure les éléments épinglés dans la suppression</value></data>
+  <data name="WorkspaceInvalidJson" xml:space="preserve"><value>Cet élément n'est pas un JSON valide.</value></data>
+  <data name="WorkspaceLastWeek" xml:space="preserve"><value>Les 7 derniers jours</value></data>
+  <data name="WorkspaceLinks" xml:space="preserve"><value>Liens</value></data>
+  <data name="WorkspaceManage" xml:space="preserve"><value>Gérer la bibliothèque</value></data>
+  <data name="WorkspaceMetadataUnavailable" xml:space="preserve"><value>Les métadonnées de la bibliothèque n'ont pas pu être chargées. La capture est suspendue et le contenu reste masqué.</value></data>
+  <data name="WorkspaceMoveDown" xml:space="preserve"><value>Descendre</value></data>
+  <data name="WorkspaceMoveUp" xml:space="preserve"><value>Monter</value></data>
+  <data name="WorkspaceNewCollection" xml:space="preserve"><value>Nom de la nouvelle collection</value></data>
+  <data name="WorkspaceNewLine" xml:space="preserve"><value>Retour à la ligne</value></data>
+  <data name="WorkspaceNoCleanupMatches" xml:space="preserve"><value>Aucun élément ne correspond à ces filtres de nettoyage.</value></data>
+  <data name="WorkspaceOriginal" xml:space="preserve"><value>Format d'origine</value></data>
+  <data name="WorkspacePassphrase" xml:space="preserve"><value>Phrase secrète de la sauvegarde</value></data>
+  <data name="WorkspacePasteMode" xml:space="preserve"><value>Format de collage</value></data>
+  <data name="WorkspacePasteNext" xml:space="preserve"><value>Coller le suivant</value></data>
+  <data name="WorkspacePasteTogether" xml:space="preserve"><value>Tout coller</value></data>
+  <data name="WorkspacePause15" xml:space="preserve"><value>Suspendre la capture pendant 15 minutes</value></data>
+  <data name="WorkspacePausedUntil" xml:space="preserve"><value>Capture suspendue jusqu'à {0:t}</value></data>
+  <data name="WorkspacePausedUntilResume" xml:space="preserve"><value>Capture suspendue jusqu'à reprise manuelle</value></data>
+  <data name="WorkspacePauseHour" xml:space="preserve"><value>Suspendre la capture pendant 1 heure</value></data>
+  <data name="WorkspacePauseManual" xml:space="preserve"><value>Suspendre la capture jusqu'à reprise manuelle</value></data>
+  <data name="WorkspacePinnedItems" xml:space="preserve"><value>Éléments épinglés</value></data>
+  <data name="WorkspacePlainText" xml:space="preserve"><value>Texte brut</value></data>
+  <data name="WorkspacePresentation" xml:space="preserve"><value>Masquer le contenu du presse-papiers</value></data>
+  <data name="WorkspacePresentationHelp" xml:space="preserve"><value>Le mode présentation masque le contenu dans la barre et cette fenêtre. La capture continue tant qu'elle n'est pas suspendue. Affichez le contenu uniquement lorsque vous pouvez le faire sans risque.</value></data>
+  <data name="WorkspacePrivacy" xml:space="preserve"><value>Confidentialité</value></data>
+  <data name="WorkspacePrivacySaveFailed" xml:space="preserve"><value>Le réglage n'a pas pu être enregistré. Une protection activée pour cette session peut ne pas persister après un redémarrage. Vérifiez l'accès au disque avant de vous y fier.</value></data>
+  <data name="WorkspaceQueryHelp" xml:space="preserve"><value>Recherche : type:image after:2026-01-01 pinned:true collection:"Projet"</value></data>
+  <data name="WorkspaceQueue" xml:space="preserve"><value>File de collage</value></data>
+  <data name="WorkspaceQueueCount" xml:space="preserve"><value>{0} éléments dans la file</value></data>
+  <data name="WorkspaceRecording" xml:space="preserve"><value>Capture active</value></data>
+  <data name="WorkspaceRefreshStorage" xml:space="preserve"><value>Actualiser le stockage</value></data>
+  <data name="WorkspaceRemoveMembership" xml:space="preserve"><value>Retirer la sélection de la collection</value></data>
+  <data name="WorkspaceResume" xml:space="preserve"><value>Reprendre la capture</value></data>
+  <data name="WorkspaceReveal" xml:space="preserve"><value>Afficher le contenu du presse-papiers</value></data>
+  <data name="WorkspaceSelectionCount" xml:space="preserve"><value>{0} sélectionnés</value></data>
+  <data name="WorkspaceSeparator" xml:space="preserve"><value>Séparateur de texte</value></data>
+  <data name="WorkspaceSingleLine" xml:space="preserve"><value>Une seule ligne</value></data>
+  <data name="WorkspaceStorage" xml:space="preserve"><value>Stockage</value></data>
+  <data name="WorkspaceStorageSummary" xml:space="preserve"><value>{0} éléments enregistrés, {1}. Les plus volumineux en premier.</value></data>
+  <data name="WorkspaceTabSeparator" xml:space="preserve"><value>Tabulation</value></data>
+  <data name="WorkspaceTextItems" xml:space="preserve"><value>Textes</value></data>
+  <data name="WorkspaceThroughDate" xml:space="preserve"><value>Jusqu'au (inclus)</value></data>
+  <data name="WorkspaceToday" xml:space="preserve"><value>Aujourd'hui</value></data>
+  <data name="WorkspaceTransferProgress" xml:space="preserve"><value>{0} éléments traités...</value></data>
+  <data name="WorkspaceUnavailableItem" xml:space="preserve"><value>Élément indisponible</value></data>
+  <data name="WorkspaceQueryType" xml:space="preserve"><value>Type d'élément inconnu.</value></data>
+  <data name="WorkspaceQueryDate" xml:space="preserve"><value>Les dates doivent suivre le format AAAA-MM-JJ.</value></data>
+  <data name="WorkspaceQueryPinned" xml:space="preserve"><value>Le filtre pinned doit être true ou false.</value></data>
+  <data name="WorkspaceQueryCollection" xml:space="preserve"><value>Le nom de la collection est requis.</value></data>
+  <data name="WorkspaceQueryQuote" xml:space="preserve"><value>Fermez les guillemets de l'expression.</value></data>
+  <data name="WorkspaceQueryRange" xml:space="preserve"><value>L'intervalle de dates est inversé.</value></data>
+  <data name="SettingsHistoryGroup" xml:space="preserve"><value>Historique et stockage</value></data>
+  <data name="SettingsDisplayGroup" xml:space="preserve"><value>Affichage et raccourcis</value></data>
+  <data name="SettingsSystemGroup" xml:space="preserve"><value>Windows et mises à jour</value></data>
+  <data name="SettingsCaptureHeader" xml:space="preserve"><value>Capture de l'historique</value></data>
+  <data name="SettingsCaptureActions" xml:space="preserve"><value>Gérer la capture</value></data>
+  <data name="SettingsPresentationHeader" xml:space="preserve"><value>Mode présentation</value></data>
+  <data name="SettingsPresentationDescription" xml:space="preserve"><value>Masquer les aperçus dans la barre et la fenêtre. La capture continue tant qu'elle n'est pas suspendue.</value></data>
+  <data name="SettingsPauseHelp" xml:space="preserve"><value>La suspension concerne uniquement SillClip. L'historique Windows peut continuer à conserver les éléments copiés.</value></data>
+  <data name="SettingsShowPreviews" xml:space="preserve"><value>Afficher les aperçus</value></data>
+  <data name="SettingsHidePreviews" xml:space="preserve"><value>Masquer les aperçus</value></data>
+  <data name="SettingsLaunchFailed" xml:space="preserve"><value>Windows n'a pas pu ouvrir cette page. Essayez de l'ouvrir depuis les paramètres Windows.</value></data>
+  <data name="WorkspaceLibraryTitle" xml:space="preserve"><value>Bibliothèque du presse-papiers</value></data>
+  <data name="WorkspaceOpenFailed" xml:space="preserve"><value>La bibliothèque n'a pas pu s'ouvrir. Consultez le journal de WindowSill pour plus de détails.</value></data>
+  <data name="WorkspaceBrowseEmpty" xml:space="preserve"><value>Votre bibliothèque est vide. Copiez un texte ou une image lorsque la capture est active pour commencer.</value></data>
 </root>

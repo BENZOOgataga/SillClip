@@ -14,10 +14,11 @@ namespace WindowSill.ClipboardHistory.Services;
 /// then notifies subscribers when the cache is updated.
 /// </summary>
 [Export(typeof(ClipboardHistoryDataService))]
-internal sealed class ClipboardHistoryDataService
+internal sealed class ClipboardHistoryDataService : ILiveClipboardHistory
 {
     private readonly DisposableSemaphore _semaphore = new();
     private readonly ILogger _logger;
+    private readonly LibraryStateService _library;
     private readonly ConcurrentDictionary<string, DetectedClipboardDataType> _dataTypeCache = new();
     private readonly ConcurrentDictionary<string, string> _signatureCache = new();
     private readonly ConcurrentDictionary<string, LiveClipboardItemSource> _sourceCache = new();
@@ -26,9 +27,10 @@ internal sealed class ClipboardHistoryDataService
     private int _subscriberCount;
 
     [ImportingConstructor]
-    public ClipboardHistoryDataService()
+    public ClipboardHistoryDataService(LibraryStateService library)
     {
         _logger = this.Log();
+        _library = library;
     }
 
     /// <summary>
@@ -47,12 +49,18 @@ internal sealed class ClipboardHistoryDataService
     /// </summary>
     public IReadOnlyList<ClipboardItemData> GetCachedItems() => Volatile.Read(ref _cachedItems);
 
-    internal Task DeleteBySignatureAsync(string signature)
+    public Task DeleteBySignatureAsync(string signature)
         => ThreadHelper.RunOnUIThreadAsync(() =>
         {
             foreach (var item in GetCachedItems().Where(item => item.ContentSignature == signature))
                 item.Source.DeleteFromHistory();
         });
+
+    public Task ClearAsync() => ThreadHelper.RunOnUIThreadAsync(() =>
+    {
+        if (Clipboard.IsHistoryEnabled() && !Clipboard.ClearHistory())
+            throw new InvalidOperationException("Windows clipboard history could not be cleared.");
+    });
 
     /// <summary>
     /// Subscribes to clipboard events. Call this when a consumer activates.
@@ -101,10 +109,12 @@ internal sealed class ClipboardHistoryDataService
                 {
                     try
                     {
+                        if (!_library.AllowsCapture(item.Timestamp)) continue;
                         // Resolve native history properties on this worker, never during XAML layout.
                         var source = _sourceCache.GetOrAdd(item.Id, _ => new LiveClipboardItemSource(item, item.Content));
                         DetectedClipboardDataType dataType = await GetOrComputeDataTypeAsync(item, source.Data);
                         string signature = await GetOrComputeSignatureAsync(item, source.Data, dataType);
+                        if (!_library.AllowsItem(signature, item.Timestamp)) continue;
                         itemDataList.Add(new ClipboardItemData(source, dataType, signature) { CapturedAt = item.Timestamp });
                     }
                     catch (Exception ex) { _logger.LogWarning(ex, "A Windows clipboard entry is no longer available."); }

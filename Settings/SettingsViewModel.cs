@@ -10,6 +10,10 @@ internal sealed partial class SettingsViewModel : ObservableObject
     private readonly ISettingsProvider _settingsProvider;
     private readonly GitHubUpdateService _updateService;
     private bool _attached;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasLaunchError))]
+    public partial string LaunchError { get; internal set; } = string.Empty;
+    public bool HasLaunchError => !string.IsNullOrEmpty(LaunchError);
 
     public SettingsViewModel(ISettingsProvider settingsProvider, GitHubUpdateService updateService)
     {
@@ -111,8 +115,11 @@ internal sealed partial class SettingsViewModel : ObservableObject
 
     private void Clipboard_HistoryEnabledChanged(object? sender, object e)
     {
-        OnPropertyChanged(nameof(IsClipboardHistoryEnabled));
-        OnPropertyChanged(nameof(IsClipboardHistoryDisabled));
+        ThreadHelper.RunOnUIThreadAsync(() =>
+        {
+            OnPropertyChanged(nameof(IsClipboardHistoryEnabled));
+            OnPropertyChanged(nameof(IsClipboardHistoryDisabled));
+        }).Forget();
     }
 
     private void UpdateService_StatusChanged(object? sender, EventArgs e)

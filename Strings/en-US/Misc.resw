@@ -197,4 +197,119 @@
   <data name="Paste" xml:space="preserve"><value>Paste</value></data>
   <data name="Close" xml:space="preserve"><value>Close</value></data>
   <data name="ClearAll" xml:space="preserve"><value>Clear all</value></data>
+  <data name="WorkspaceActionFailed" xml:space="preserve"><value>The action failed. Try again or check the WindowSill log.</value></data>
+  <data name="WorkspaceAddToQueue" xml:space="preserve"><value>Add selection to queue</value></data>
+  <data name="WorkspaceAllItems" xml:space="preserve"><value>All items</value></data>
+  <data name="WorkspaceArchiveAuthenticationFailed" xml:space="preserve"><value>Unable to unlock the backup. Check the passphrase and file integrity.</value></data>
+  <data name="WorkspaceAssignCollection" xml:space="preserve"><value>Add selection to collection</value></data>
+  <data name="WorkspaceBack" xml:space="preserve"><value>Back</value></data>
+  <data name="WorkspaceBackup" xml:space="preserve"><value>Backup</value></data>
+  <data name="WorkspaceBackupHelp" xml:space="preserve"><value>Export an encrypted backup to a file, or restore one. Use a passphrase of at least 12 characters for export and keep it somewhere safe. It cannot be recovered. Imports add entries without replacing existing ones.</value></data>
+  <data name="WorkspaceBlankLine" xml:space="preserve"><value>Blank line</value></data>
+  <data name="WorkspaceBrowse" xml:space="preserve"><value>Browse</value></data>
+  <data name="WorkspaceCancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="WorkspaceCancelled" xml:space="preserve"><value>Operation cancelled.</value></data>
+  <data name="WorkspaceCheckInput" xml:space="preserve"><value>Check your selection and input values.</value></data>
+  <data name="WorkspaceChooseCollection" xml:space="preserve"><value>Choose a collection</value></data>
+  <data name="WorkspaceCleanRange" xml:space="preserve"><value>Delete matching entries</value></data>
+  <data name="WorkspaceCleanUrl" xml:space="preserve"><value>URL without tracking parameters</value></data>
+  <data name="WorkspaceCollectionAssigned" xml:space="preserve"><value>Collection membership updated.</value></data>
+  <data name="WorkspaceCollectionCreated" xml:space="preserve"><value>Collection created.</value></data>
+  <data name="WorkspaceCollectionHelp" xml:space="preserve"><value>Select entries in Browse, then add them to a collection here. An entry can belong to several collections.</value></data>
+  <data name="WorkspaceCollections" xml:space="preserve"><value>Collections</value></data>
+  <data name="WorkspaceCompare" xml:space="preserve"><value>Compare</value></data>
+  <data name="WorkspaceCompareHelp" xml:space="preserve"><value>Select exactly two text entries in Browse. Lines beginning with - belong to the first entry, and + to the second. Protected text cannot be compared.</value></data>
+  <data name="WorkspaceConfirm" xml:space="preserve"><value>Confirm</value></data>
+  <data name="WorkspaceConfirmPassphrase" xml:space="preserve"><value>Confirm passphrase (export only)</value></data>
+  <data name="WorkspaceCopied" xml:space="preserve"><value>Copied to clipboard.</value></data>
+  <data name="WorkspaceCopiedFocusChanged" xml:space="preserve"><value>Copied, but not pasted because the target window changed.</value></data>
+  <data name="WorkspaceCopyDiff" xml:space="preserve"><value>Copy comparison</value></data>
+  <data name="WorkspaceCreateCollection" xml:space="preserve"><value>Create collection</value></data>
+  <data name="WorkspaceDeleteCollection" xml:space="preserve"><value>Delete collection</value></data>
+  <data name="WorkspaceDeleteCollectionBody" xml:space="preserve"><value>Delete this collection? Its clipboard entries will be kept.</value></data>
+  <data name="WorkspaceDeleteCount" xml:space="preserve"><value>Delete {0} entries from the clipboard library and Windows history? This cannot be undone.</value></data>
+  <data name="WorkspaceDeleteEntries" xml:space="preserve"><value>Delete entries</value></data>
+  <data name="WorkspaceDeleteSelected" xml:space="preserve"><value>Delete selected entry</value></data>
+  <data name="WorkspaceDiffSummary" xml:space="preserve"><value>{0} lines added, {1} removed.</value></data>
+  <data name="WorkspaceDiffTruncated" xml:space="preserve"><value>Comparison shortened for large input.</value></data>
+  <data name="WorkspaceExport" xml:space="preserve"><value>Export backup</value></data>
+  <data name="WorkspaceExportDone" xml:space="preserve"><value>Exported {0} entries.</value></data>
+  <data name="WorkspaceFileError" xml:space="preserve"><value>Unable to read or write the file. Check available disk space and file access.</value></data>
+  <data name="WorkspaceFileReferenceHelp" xml:space="preserve"><value>File contents are never included. When enabled, file paths are exported and restored as text. Remote and device paths are rejected.</value></data>
+  <data name="WorkspaceFileReferences" xml:space="preserve"><value>Include local file references</value></data>
+  <data name="WorkspaceFilterCollection" xml:space="preserve"><value>Show collection in Browse</value></data>
+  <data name="WorkspaceFilters" xml:space="preserve"><value>Search filters</value></data>
+  <data name="WorkspaceFormatJson" xml:space="preserve"><value>Formatted JSON</value></data>
+  <data name="WorkspaceFromDate" xml:space="preserve"><value>From (inclusive)</value></data>
+  <data name="WorkspaceImages" xml:space="preserve"><value>Images</value></data>
+  <data name="WorkspaceImagesOnly" xml:space="preserve"><value>Images only</value></data>
+  <data name="WorkspaceImport" xml:space="preserve"><value>Import backup</value></data>
+  <data name="WorkspaceImportConfirmation" xml:space="preserve"><value>Restore this encrypted backup? Existing entries are kept. Restored text and links may contain sensitive information; import only a backup you trust.</value></data>
+  <data name="WorkspaceImportDone" xml:space="preserve"><value>Added {0}, already present {1}, skipped {2}.</value></data>
+  <data name="WorkspaceIncludePins" xml:space="preserve"><value>Include pinned items in deletion</value></data>
+  <data name="WorkspaceInvalidJson" xml:space="preserve"><value>This entry is not valid JSON.</value></data>
+  <data name="WorkspaceLastWeek" xml:space="preserve"><value>Last 7 days</value></data>
+  <data name="WorkspaceLinks" xml:space="preserve"><value>Links</value></data>
+  <data name="WorkspaceManage" xml:space="preserve"><value>Manage clipboard library</value></data>
+  <data name="WorkspaceMetadataUnavailable" xml:space="preserve"><value>Library metadata could not be loaded. Capture is paused and content remains hidden.</value></data>
+  <data name="WorkspaceMoveDown" xml:space="preserve"><value>Move down</value></data>
+  <data name="WorkspaceMoveUp" xml:space="preserve"><value>Move up</value></data>
+  <data name="WorkspaceNewCollection" xml:space="preserve"><value>New collection name</value></data>
+  <data name="WorkspaceNewLine" xml:space="preserve"><value>New line</value></data>
+  <data name="WorkspaceNoCleanupMatches" xml:space="preserve"><value>No entries match these cleanup filters.</value></data>
+  <data name="WorkspaceOriginal" xml:space="preserve"><value>Original format</value></data>
+  <data name="WorkspacePassphrase" xml:space="preserve"><value>Backup passphrase</value></data>
+  <data name="WorkspacePasteMode" xml:space="preserve"><value>Paste format</value></data>
+  <data name="WorkspacePasteNext" xml:space="preserve"><value>Paste next</value></data>
+  <data name="WorkspacePasteTogether" xml:space="preserve"><value>Paste together</value></data>
+  <data name="WorkspacePause15" xml:space="preserve"><value>Pause capture for 15 minutes</value></data>
+  <data name="WorkspacePausedUntil" xml:space="preserve"><value>Capture paused until {0:t}</value></data>
+  <data name="WorkspacePausedUntilResume" xml:space="preserve"><value>Capture paused until resumed</value></data>
+  <data name="WorkspacePauseHour" xml:space="preserve"><value>Pause capture for 1 hour</value></data>
+  <data name="WorkspacePauseManual" xml:space="preserve"><value>Pause capture until resumed</value></data>
+  <data name="WorkspacePinnedItems" xml:space="preserve"><value>Pinned items</value></data>
+  <data name="WorkspacePlainText" xml:space="preserve"><value>Plain text</value></data>
+  <data name="WorkspacePresentation" xml:space="preserve"><value>Hide clipboard content</value></data>
+  <data name="WorkspacePresentationHelp" xml:space="preserve"><value>Presentation mode hides clipboard content in the bar and this popup. Capture continues unless paused. Reveal content only when it is safe to display it.</value></data>
+  <data name="WorkspacePrivacy" xml:space="preserve"><value>Privacy</value></data>
+  <data name="WorkspacePrivacySaveFailed" xml:space="preserve"><value>The setting could not be saved. Any protection enabled for this session may not survive a restart. Check disk access before relying on it.</value></data>
+  <data name="WorkspaceQueryHelp" xml:space="preserve"><value>Search: type:image after:2026-01-01 pinned:true collection:"Project"</value></data>
+  <data name="WorkspaceQueue" xml:space="preserve"><value>Paste queue</value></data>
+  <data name="WorkspaceQueueCount" xml:space="preserve"><value>{0} queued entries</value></data>
+  <data name="WorkspaceRecording" xml:space="preserve"><value>Capture active</value></data>
+  <data name="WorkspaceRefreshStorage" xml:space="preserve"><value>Refresh storage</value></data>
+  <data name="WorkspaceRemoveMembership" xml:space="preserve"><value>Remove selection from collection</value></data>
+  <data name="WorkspaceResume" xml:space="preserve"><value>Resume capture</value></data>
+  <data name="WorkspaceReveal" xml:space="preserve"><value>Reveal clipboard content</value></data>
+  <data name="WorkspaceSelectionCount" xml:space="preserve"><value>{0} selected</value></data>
+  <data name="WorkspaceSeparator" xml:space="preserve"><value>Text separator</value></data>
+  <data name="WorkspaceSingleLine" xml:space="preserve"><value>Single line</value></data>
+  <data name="WorkspaceStorage" xml:space="preserve"><value>Storage</value></data>
+  <data name="WorkspaceStorageSummary" xml:space="preserve"><value>{0} stored entries, {1}. Largest first.</value></data>
+  <data name="WorkspaceTabSeparator" xml:space="preserve"><value>Tab</value></data>
+  <data name="WorkspaceTextItems" xml:space="preserve"><value>Text</value></data>
+  <data name="WorkspaceThroughDate" xml:space="preserve"><value>Through (inclusive)</value></data>
+  <data name="WorkspaceToday" xml:space="preserve"><value>Today</value></data>
+  <data name="WorkspaceTransferProgress" xml:space="preserve"><value>Processed {0} entries...</value></data>
+  <data name="WorkspaceUnavailableItem" xml:space="preserve"><value>Entry no longer available</value></data>
+  <data name="WorkspaceQueryType" xml:space="preserve"><value>Unknown item type.</value></data>
+  <data name="WorkspaceQueryDate" xml:space="preserve"><value>Dates must use YYYY-MM-DD.</value></data>
+  <data name="WorkspaceQueryPinned" xml:space="preserve"><value>Pinned must be true or false.</value></data>
+  <data name="WorkspaceQueryCollection" xml:space="preserve"><value>A collection name is required.</value></data>
+  <data name="WorkspaceQueryQuote" xml:space="preserve"><value>Close the quoted phrase.</value></data>
+  <data name="WorkspaceQueryRange" xml:space="preserve"><value>The date range is reversed.</value></data>
+  <data name="SettingsHistoryGroup" xml:space="preserve"><value>History and storage</value></data>
+  <data name="SettingsDisplayGroup" xml:space="preserve"><value>Display and shortcuts</value></data>
+  <data name="SettingsSystemGroup" xml:space="preserve"><value>Windows and updates</value></data>
+  <data name="SettingsCaptureHeader" xml:space="preserve"><value>History capture</value></data>
+  <data name="SettingsCaptureActions" xml:space="preserve"><value>Manage capture</value></data>
+  <data name="SettingsPresentationHeader" xml:space="preserve"><value>Presentation mode</value></data>
+  <data name="SettingsPresentationDescription" xml:space="preserve"><value>Hide clipboard previews in the bar and popup. Capture continues unless paused.</value></data>
+  <data name="SettingsPauseHelp" xml:space="preserve"><value>Pausing affects SillClip only. Windows clipboard history may still keep copied items.</value></data>
+  <data name="SettingsShowPreviews" xml:space="preserve"><value>Show previews</value></data>
+  <data name="SettingsHidePreviews" xml:space="preserve"><value>Hide previews</value></data>
+  <data name="SettingsLaunchFailed" xml:space="preserve"><value>Windows could not open this page. Try opening it from Windows Settings.</value></data>
+  <data name="WorkspaceLibraryTitle" xml:space="preserve"><value>Clipboard library</value></data>
+  <data name="WorkspaceOpenFailed" xml:space="preserve"><value>The clipboard library could not open. Check the WindowSill log for details.</value></data>
+  <data name="WorkspaceBrowseEmpty" xml:space="preserve"><value>Your clipboard library is empty. Copy text or an image while capture is active to get started.</value></data>
 </root>

@@ -18,6 +18,7 @@ internal sealed class ClipboardItemViewFactory
     private readonly PinnedClipboardService _pinnedService;
     private readonly PersistentClipboardService _persistentService;
     private readonly ClipboardHistoryDataService _clipboardDataService;
+    private readonly ClipboardWorkspaceService _workspace;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ClipboardItemViewFactory"/> class.
@@ -32,7 +33,7 @@ internal sealed class ClipboardItemViewFactory
         IProcessInteractionService processInteractionService,
         PinnedClipboardService pinnedService,
         PersistentClipboardService persistentService,
-        ClipboardHistoryDataService clipboardDataService)
+        ClipboardHistoryDataService clipboardDataService, ClipboardWorkspaceService workspace)
     {
         _pluginInfo = pluginInfo;
         _settingsProvider = settingsProvider;
@@ -40,6 +41,7 @@ internal sealed class ClipboardItemViewFactory
         _pinnedService = pinnedService;
         _persistentService = persistentService;
         _clipboardDataService = clipboardDataService;
+        _workspace = workspace;
     }
 
     /// <summary>
@@ -67,6 +69,7 @@ internal sealed class ClipboardItemViewFactory
         viewModel.ConfigurePinning(itemData, _pinnedService);
         viewModel.ConfigurePersistence(itemData, _persistentService, _clipboardDataService);
         viewModel.ConfigurePrivacy(_settingsProvider.GetSetting(Settings.Settings.HidePasswords));
+        viewModel.ConfigureWorkspace(_workspace);
         return viewModel;
     }
 
@@ -94,6 +97,7 @@ internal sealed class ClipboardItemViewFactory
         result.ViewModel.ConfigurePinning(itemData, _pinnedService);
         result.ViewModel.ConfigurePersistence(itemData, _persistentService, _clipboardDataService);
         result.ViewModel.ConfigurePrivacy(_settingsProvider.GetSetting(Settings.Settings.HidePasswords));
+        result.ViewModel.ConfigureWorkspace(_workspace);
         return result;
     }
 

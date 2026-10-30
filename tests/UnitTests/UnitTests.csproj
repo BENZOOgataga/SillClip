@@ -5,6 +5,12 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../../Core/HistoryQuery.cs" Link="HistoryQuery.cs" />
+    <Compile Include="../../Core/ClipboardTextTransforms.cs" Link="ClipboardTextTransforms.cs" />
+    <Compile Include="../../Core/TextComparison.cs" Link="TextComparison.cs" />
+    <Compile Include="../../Core/LibraryState.cs" Link="LibraryState.cs" />
+    <Compile Include="../../Core/PortableClipboardEntry.cs" Link="PortableClipboardEntry.cs" />
+    <Compile Include="../../Core/PortableClipboardArchive.cs" Link="PortableClipboardArchive.cs" />
     <Compile Include="../../Core/ReleaseRepository.cs" Link="ReleaseRepository.cs" />
     <Compile Include="../../Core/PopupNavigation.cs" Link="PopupNavigation.cs" />
     <Compile Include="../../Core/ThumbnailSize.cs" Link="ThumbnailSize.cs" />

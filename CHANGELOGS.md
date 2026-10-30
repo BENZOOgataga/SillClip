@@ -1,3 +1,14 @@
+# 1.0.0
+- Added search filters for item type, dates, pins, and collections.
+- Added collections, text comparison, paste formats, and a paste queue.
+- Added timed capture pauses and a presentation mode that hides clipboard previews.
+- Added storage totals, size sorting, and date-range cleanup with pinned-item protection.
+- Added passphrase-encrypted backup export and authenticated, staged import.
+- Grouped extension settings and aligned popup controls and library toolbars.
+- Fixed library page loading restarting WindowSill because of an invalid icon value.
+- Kept page-loading failures inside the extension instead of restarting the host.
+- Added compiled WinUI page and layout checks for English, French, light, and dark themes.
+
 # 0.10.4
 - Renamed the GitHub repository to SillClip and updated project links.
 - Updated GitHub release checks to accept links for the new repository name and the legacy alias.

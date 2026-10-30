@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <UseWinUI>true</UseWinUI>
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PlatformTarget>x64</PlatformTarget>
+    <Win2DWarnNoPlatform>false</Win2DWarnNoPlatform>
+    <IsPackable>false</IsPackable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../WindowSill.ClipboardHistory.csproj" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools.MSIX" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="../../Strings/en-US/*.resw" CopyToOutputDirectory="PreserveNewest" Link="Strings/en-US/%(Filename)%(Extension)" />
+    <None Include="../../Strings/fr-FR/*.resw" CopyToOutputDirectory="PreserveNewest" Link="Strings/fr-FR/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

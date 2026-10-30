@@ -25,8 +25,11 @@ internal sealed class PinnedClipboardService
 
     [ImportingConstructor]
     public PinnedClipboardService(IPluginInfo pluginInfo)
+        : this(ClipboardDataMigration.ForkFolder(pluginInfo.GetPluginDataFolder())) { }
+
+    internal PinnedClipboardService(string dataFolder)
     {
-        _dataFolder = ClipboardDataMigration.ForkFolder(pluginInfo.GetPluginDataFolder());
+        _dataFolder = dataFolder;
         _store = new PinnedClipboardStore(_dataFolder);
     }
 
@@ -40,6 +43,22 @@ internal sealed class PinnedClipboardService
     /// </summary>
     public IReadOnlyList<ClipboardItemData> GetPinnedItems()
         => Volatile.Read(ref _snapshot);
+    internal PinnedClipboardStore Store => _store;
+
+    internal async Task<bool> ImportAsync(PinnedClipboardItem model, CancellationToken cancellationToken)
+    {
+        using IDisposable _ = await _semaphore.WaitAsync(cancellationToken);
+        if (_signatures.Contains(model.ContentSignature)) return false;
+        try { await _store.SaveAsync(model, cancellationToken); }
+        catch { await _store.DeleteAsync(model.Id, CancellationToken.None); throw; }
+        model.ImageBytes = null;
+        _pinned.Add(await CreateDataAsync(model));
+        _signatures.Add(model.ContentSignature);
+        Publish();
+        return true;
+    }
+
+    internal void NotifyChanged() => PinsChanged?.Invoke(this, EventArgs.Empty);
 
     /// <summary>
     /// Gets whether an item with the given content signature is already pinned.

@@ -4,7 +4,7 @@ SillClip is a free fork of the official WindowSill Clipboard History extension. 
 
 ![SillClip settings showing unlimited history, encrypted persistence, and the Win+V shortcut.](Screenshots/settings.png)
 
-Download the `.wsext` package from the [stable release](https://github.com/BENZOOgataga/SillClip/releases/tag/v0.10.4). Installation steps are below. You need Windows 11 and WindowSill 1.0.3 or newer.
+Download the `.wsext` package from the [stable release](https://github.com/BENZOOgataga/SillClip/releases/tag/v1.0.0). Installation steps are below. You need Windows 11 and WindowSill 1.0.3 or newer.
 
 ## What this fork adds
 
@@ -26,13 +26,15 @@ Windows exposes only a small clipboard history through `Clipboard.GetHistoryItem
 
 This fork listens for clipboard changes while WindowSill is running and writes its own archive from entries accepted by Windows clipboard history. Text, HTML, RTF, links, colors, images, and file references can be restored after a restart. Repeated content is deduplicated by a SHA-256 content signature. Windows can still reject an individual copy because of its format or size; removing the archive count limit does not change that capture constraint.
 
-Archive metadata and image data are encrypted with Windows DPAPI for the current user. The files cannot be decrypted by another Windows account or on another computer. Clipboard data is still sensitive, so persistent history can be disabled in the extension settings. Use Clear all in this extension to clear its encrypted archive; pinned items are preserved. Clearing history in Windows Settings alone does not clear the extension's archive.
+Archive metadata and image data are encrypted with Windows DPAPI for the current user. These files depend on that user's Windows protection keys and are not a portable backup format. Disabling persistent history stops new archive writes and keeps existing saved files. Use Clear all in this extension to clear its encrypted archive; pinned items are preserved. Clearing history in Windows Settings alone does not clear the extension's archive.
 
 Images are read from disk on demand and decoded as thumbnails for the list. Link icons are local; copied URLs are not sent to a favicon service. The Hide passwords option masks detected passwords in the list and preview and excludes them from text search. Detection is heuristic, so this option does not prevent every secret from being displayed or stored.
 
 There is no arbitrary count limit when the setting is `0` or `-1`. Available disk space and memory remain practical limits, especially for image-heavy histories.
 
 ## Search
+
+Version 1.0 includes a [clipboard library](docs/clipboard-library.md) with advanced filters, collections, text comparison, a paste queue, privacy controls, cleanup, and encrypted backups.
 
 In expanded mode, the bar keeps the 25 most recent entries visible and the search popup provides access to the full archive. This prevents a 500-item history from creating 500 controls in the bar. In compact mode, open the Clipboard History popup. The search field filters as you type and supports multiple terms. Text, links, file names, file paths, and item types are indexed.
 
@@ -67,7 +69,7 @@ To install:
 1. Open WindowSill Settings.
 2. Open Manage Extensions.
 3. Disable the official Clipboard History extension to avoid two active clipboard panels.
-4. Download `WindowSill.ClipboardHistory.NoLimits.0.10.4.wsext` from the [release page](https://github.com/BENZOOgataga/SillClip/releases/tag/v0.10.4).
+4. Download `WindowSill.ClipboardHistory.NoLimits.1.0.0.wsext` from the [release page](https://github.com/BENZOOgataga/SillClip/releases/tag/v1.0.0).
 5. Double-click the `.wsext` file in File Explorer.
 6. Accept the WindowSill installation prompt, then enable Clipboard History No Limits if needed.
 
@@ -99,7 +101,9 @@ Run the regression tests with:
 
 ```powershell
 dotnet test tests/UnitTests/UnitTests.csproj -c Release
+dotnet test tests/IntegrationTests/IntegrationTests.csproj -c Release
 dotnet run --project tests/NativePlacementProbe -c Release
+dotnet run --project tests/UiSmokeProbe -c Release
 ```
 
 To debug the extension:

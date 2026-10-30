@@ -33,6 +33,7 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
     private readonly PersistentClipboardService _persistentService;
     private readonly GitHubUpdateService _updateService;
     private readonly WinVShortcutService _winVShortcutService;
+    private readonly ClipboardWorkspaceService _workspace;
     private readonly ClipboardItemViewFactory _viewFactory;
 
     private ClipboardHistoryPopupViewModel? _popupViewModel;
@@ -55,7 +56,7 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
         PinnedClipboardService pinnedService,
         PersistentClipboardService persistentService,
         GitHubUpdateService updateService,
-        WinVShortcutService winVShortcutService)
+        WinVShortcutService winVShortcutService, ClipboardWorkspaceService workspace)
     {
         _logger = this.Log();
         _refreshQueue = new CoalescingAsyncAction(ex => _logger.LogWarning(ex, "Clipboard refresh failed. The next clipboard change will retry."));
@@ -66,13 +67,14 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
         _persistentService = persistentService;
         _updateService = updateService;
         _winVShortcutService = winVShortcutService;
+        _workspace = workspace;
         _viewFactory = new ClipboardItemViewFactory(
             _pluginInfo,
             settingsProvider,
             processInteractionService,
             pinnedService,
             persistentService,
-            clipboardDataService);
+            clipboardDataService, workspace);
         PlaceholderView = _viewFactory.CreatePlaceholderView();
     }
 
@@ -90,7 +92,7 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
         [
         new SillSettingsView(
             DisplayName,
-            new(() => new SettingsView(_settingsProvider, _updateService)))
+            new(() => new SettingsView(_settingsProvider, _updateService, _workspace.State)))
         ];
 
     public ObservableCollection<SillListViewItem> ViewList { get; } = new();
@@ -110,6 +112,9 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
     public async ValueTask OnActivatedAsync()
     {
         _activation = new CancellationTokenSource();
+        try { await _workspace.State.LoadAsync(_activation.Token); }
+        catch (Exception ex) { _logger.LogError(ex, "Library metadata is unavailable. Capture is paused and presentation protection remains enabled."); }
+        _workspace.State.Changed += WorkspaceState_Changed;
         if (!_settingsProvider.GetSetting(Settings.Settings.UnlimitedDefaultsApplied))
         {
             if (_settingsProvider.GetSetting(Settings.Settings.MaximumHistoryCount) == 25)
@@ -144,6 +149,7 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
 
     public async ValueTask OnDeactivatedAsync()
     {
+        _workspace.State.Changed -= WorkspaceState_Changed;
         _activation?.Cancel();
         _refreshQueue.CancelPending();
         _popupContent?.Close();
@@ -168,6 +174,16 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
 
     private void PersistentService_HistoryChanged(object? sender, EventArgs e)
     {
+        RefreshClipboardDataAsync().Forget();
+    }
+
+    private void WorkspaceState_Changed(object? sender, EventArgs e)
+    {
+        ThreadHelper.RunOnUIThreadAsync(() =>
+        {
+            if (_workspace.State.PresentationMode) ViewList.Clear();
+            _popupViewModel?.RefreshFilter();
+        }).Forget();
         RefreshClipboardDataAsync().Forget();
     }
 
@@ -223,6 +239,7 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
     private async Task RefreshClipboardDataCoreAsync(CancellationToken token)
     {
         if (token.IsCancellationRequested) return;
+        using var operation = await _workspace.EnterAsync(token);
         int maxItems = _settingsProvider.GetSetting(Settings.Settings.MaximumHistoryCount);
         await _clipboardDataService.RefreshAsync();
 
@@ -260,22 +277,9 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
     /// </summary>
     private IReadOnlyList<ClipboardItemData> GetCombinedItems()
     {
-        IReadOnlyList<ClipboardItemData> pinned = _pinnedService.GetPinnedItems();
-        var pinnedSignatures = new HashSet<string>(pinned.Select(p => p.ContentSignature), StringComparer.Ordinal);
-
-        IEnumerable<ClipboardItemData> live = _clipboardDataService.GetCachedItems()
-            .Where(i => !pinnedSignatures.Contains(i.ContentSignature));
-
-        var liveSignatures = new HashSet<string>(live.Select(i => i.ContentSignature), StringComparer.Ordinal);
-        IEnumerable<ClipboardItemData> persisted = _settingsProvider.GetSetting(Settings.Settings.PersistentHistory)
-            ? _persistentService.GetItems().Where(i =>
-                !pinnedSignatures.Contains(i.ContentSignature)
-                && !liveSignatures.Contains(i.ContentSignature))
-            : [];
-
-        IEnumerable<ClipboardItemData> unpinned = live.Concat(persisted)
-            .OrderByDescending(item => item.CapturedAt)
-            .DistinctBy(item => string.IsNullOrEmpty(item.ContentSignature) ? item.Source.Id : item.ContentSignature);
+        var combined = _workspace.GetItems(_settingsProvider.GetSetting(Settings.Settings.PersistentHistory));
+        var pinned = combined.Where(item => item.Source.IsPinned);
+        IEnumerable<ClipboardItemData> unpinned = combined.Where(item => !item.Source.IsPinned);
         int maximumItemCount = _settingsProvider.GetSetting(Settings.Settings.MaximumHistoryCount);
         if (maximumItemCount > 0)
         {
@@ -298,7 +302,7 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
             if (token.IsCancellationRequested) return;
             if (_popupViewModel is null)
             {
-                _popupViewModel = new ClipboardHistoryPopupViewModel(_persistentService);
+                _popupViewModel = new ClipboardHistoryPopupViewModel(_persistentService, _workspace);
                 _popupContent = new ClipboardHistoryPopupContent(_popupViewModel);
                 var popupItem = new SillListViewPopupItem(
                     new ImageIcon
@@ -329,6 +333,7 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
                     }
                 });
 
+            _popupViewModel.UpdateMetadata(cachedItems);
             _popupViewModel.RefreshFilter();
         });
     }
@@ -346,13 +351,20 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
             if (token.IsCancellationRequested) return;
             if (_popupViewModel is null)
             {
-                _popupViewModel = new ClipboardHistoryPopupViewModel(_persistentService);
+                _popupViewModel = new ClipboardHistoryPopupViewModel(_persistentService, _workspace);
                 _popupContent = new ClipboardHistoryPopupContent(_popupViewModel);
                 _searchItem = new SillListViewPopupItem(
                     new FontIcon { Glyph = "\uE721", FontSize = 16, Width = 16, Height = 16 },
                     "/WindowSill.ClipboardHistory/Misc/SearchHistory".GetLocalizedString(),
                     _popupContent);
+                _searchItem.Loaded += SearchItem_Loaded;
                 _popupAnchor = _searchItem;
+            }
+
+            if (_workspace.State.PresentationMode)
+            {
+                if (_searchItem is not null) CollectionReconciler.Update(ViewList, new SillListViewItem[] { _searchItem });
+                return;
             }
 
             if (_iconItem is null)
@@ -417,6 +429,7 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
                 cachedItems,
                 (existingVm, newItemData) => existingVm.Equals(newItemData.Source),
                 itemData => _viewFactory.CreateViewModel(itemData));
+            _popupViewModel.UpdateMetadata(cachedItems);
             _popupViewModel.RefreshFilter();
 
         });
@@ -516,12 +529,26 @@ public sealed partial class ClipboardHistorySill : ObservableObject, ISillActiva
     [RelayCommand]
     private async Task ClearAsync()
     {
-        await ThreadHelper.RunOnUIThreadAsync(() =>
-        {
-            Clipboard.ClearHistory();
-        });
+        try { await _workspace.ClearUnpinnedAsync(); }
+        catch (Exception ex) { _logger.LogWarning("Clearing clipboard history failed ({ErrorType}).", ex.GetType().Name); }
+    }
 
-        await _persistentService.ClearAsync();
+    private static void SearchItem_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not DependencyObject root) return;
+        string label = "/WindowSill.ClipboardHistory/Misc/SearchHistory".GetLocalizedString();
+        SetName(root);
+        void SetName(DependencyObject element)
+        {
+            if (element is FrameworkElement { Name: "ActionButtonControl" } button)
+            {
+                Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, label);
+                Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(button, "SillClipSearchButton");
+                return;
+            }
+            for (int index = 0; index < Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChildrenCount(element); index++)
+                SetName(Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChild(element, index));
+        }
     }
 
     private static void CreateContextMenu(ClipboardHistoryItemViewModelBase viewModel, SillListViewItem view)

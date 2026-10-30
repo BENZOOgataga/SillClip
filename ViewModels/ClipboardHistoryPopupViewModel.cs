@@ -16,14 +16,14 @@ namespace WindowSill.ClipboardHistory.ViewModels;
 /// </summary>
 internal sealed partial class ClipboardHistoryPopupViewModel : ObservableObject, IDisposable
 {
-    private readonly PersistentClipboardService _persistentService;
+    internal ClipboardWorkspaceService Workspace { get; }
     private bool _filterQueued;
     private bool _disposed;
     private bool _applyingFilter;
 
-    public ClipboardHistoryPopupViewModel(PersistentClipboardService persistentService)
+    public ClipboardHistoryPopupViewModel(PersistentClipboardService persistentService, ClipboardWorkspaceService workspace)
     {
-        _persistentService = persistentService;
+        Workspace = workspace;
         AllItems.CollectionChanged += AllItems_CollectionChanged;
         Items.CollectionChanged += Items_CollectionChanged;
     }
@@ -44,6 +44,11 @@ internal sealed partial class ClipboardHistoryPopupViewModel : ObservableObject,
     public Visibility NoSearchResultsVisibility
         => AllItems.Count > 0 && Items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
+    [ObservableProperty]
+    public partial string QueryError { get; private set; } = string.Empty;
+
+    public Visibility QueryErrorVisibility => string.IsNullOrEmpty(QueryError) ? Visibility.Collapsed : Visibility.Visible;
+
     partial void OnSearchQueryChanged(string value) => RefreshFilter();
 
     /// <summary>
@@ -52,24 +57,24 @@ internal sealed partial class ClipboardHistoryPopupViewModel : ObservableObject,
     [RelayCommand]
     private async Task ClearAllAsync()
     {
-        await ThreadHelper.RunOnUIThreadAsync(() =>
+        try { await Workspace.ClearUnpinnedAsync(); }
+        catch (Exception ex)
         {
-            Clipboard.ClearHistory();
-        });
-
-        await _persistentService.ClearAsync();
+            Microsoft.Extensions.Logging.LoggerExtensions.LogWarning(typeof(ClipboardHistoryPopupViewModel).Log(),
+                "Clearing clipboard history failed ({ErrorType}).", ex.GetType().Name);
+            QueryError = UI.WorkspaceStrings.Get("WorkspaceActionFailed");
+            OnPropertyChanged(nameof(QueryErrorVisibility));
+        }
     }
 
     internal void RefreshFilter()
     {
         if (_disposed) return;
-        string[] terms = SearchQuery
-            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
-        IEnumerable<ClipboardHistoryItemViewModelBase> matchingItems = terms.Length == 0
-            ? AllItems
-            : AllItems.Where(item => terms.All(term =>
-                item.SearchText.Contains(term, StringComparison.CurrentCultureIgnoreCase)));
+        var query = HistoryQuery.Parse(SearchQuery);
+        QueryError = query.Error is null ? string.Empty : UI.WorkspaceStrings.Get(query.Error);
+        OnPropertyChanged(nameof(QueryErrorVisibility));
+        IEnumerable<ClipboardHistoryItemViewModelBase> matchingItems = AllItems.Where(item => query.Matches(
+            new(item.SearchText, item.TypeName, item.CapturedAt, item.IsPinned, Workspace.State.CollectionsFor(item.ContentSignature))));
 
         _applyingFilter = true;
         try { CollectionReconciler.Update(Items, matchingItems.ToArray()); }
@@ -77,6 +82,13 @@ internal sealed partial class ClipboardHistoryPopupViewModel : ObservableObject,
 
         OnPropertyChanged(nameof(EmptyClipboardIndicatorVisibility));
         OnPropertyChanged(nameof(NoSearchResultsVisibility));
+    }
+
+    internal void UpdateMetadata(IReadOnlyList<ClipboardItemData> items)
+    {
+        var byId = items.GroupBy(item => item.Source.Id, StringComparer.Ordinal).ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
+        foreach (var viewModel in AllItems)
+            if (byId.TryGetValue(viewModel.SourceId, out var item)) viewModel.UpdateItemData(item);
     }
 
     private void AllItems_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)

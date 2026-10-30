@@ -22,6 +22,8 @@ internal sealed class PinnedClipboardStore
     private readonly string _dataFolder;
     private readonly DisposableSemaphore _semaphore = new();
 
+    internal string Folder => _dataFolder;
+
     /// <param name="pluginDataFolder">The plugin's writable data folder.</param>
     internal PinnedClipboardStore(string pluginDataFolder, string folderName = "Pinned")
     {
@@ -62,9 +64,9 @@ internal sealed class PinnedClipboardStore
             await WriteEncryptedAsync(GetImagePath(item.Id), item.ImageBytes, cancellationToken);
         }
 
-        string json = JsonSerializer.Serialize(item, JsonSerializerOptions.Web);
-        byte[] plaintext = Encoding.UTF8.GetBytes(json);
-        await WriteEncryptedAsync(GetDataPath(item.Id), plaintext, cancellationToken);
+        byte[] plaintext = JsonSerializer.SerializeToUtf8Bytes(item, JsonSerializerOptions.Web);
+        try { await WriteEncryptedAsync(GetDataPath(item.Id), plaintext, cancellationToken); }
+        finally { CryptographicOperations.ZeroMemory(plaintext); }
     }
 
     /// <summary>
@@ -103,10 +105,8 @@ internal sealed class PinnedClipboardStore
         {
             byte[] encrypted = await File.ReadAllBytesAsync(filePath, cancellationToken).ConfigureAwait(false);
             byte[] plaintext = ProtectedData.Unprotect(encrypted, null, DataProtectionScope.CurrentUser);
-            string json = Encoding.UTF8.GetString(plaintext);
-            PinnedClipboardItem? item = JsonSerializer.Deserialize<PinnedClipboardItem>(json, JsonSerializerOptions.Web);
-
-            return item;
+            try { return JsonSerializer.Deserialize<PinnedClipboardItem>(plaintext, JsonSerializerOptions.Web); }
+            finally { CryptographicOperations.ZeroMemory(plaintext); }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -122,8 +122,12 @@ internal sealed class PinnedClipboardStore
     {
         byte[] encrypted = await Task.Run(() => ProtectedData.Protect(plaintext, null, DataProtectionScope.CurrentUser));
         string tempPath = filePath + ".tmp";
-        await File.WriteAllBytesAsync(tempPath, encrypted, cancellationToken);
-        File.Move(tempPath, filePath, overwrite: true);
+        try
+        {
+            await File.WriteAllBytesAsync(tempPath, encrypted, cancellationToken);
+            File.Move(tempPath, filePath, overwrite: true);
+        }
+        finally { if (File.Exists(tempPath)) File.Delete(tempPath); }
     }
 
     private string GetDataPath(string id) => Path.Combine(_dataFolder, SafeFileName(id) + DataExtension);
@@ -135,6 +139,12 @@ internal sealed class PinnedClipboardStore
         byte[] encrypted = await File.ReadAllBytesAsync(GetImagePath(id)).ConfigureAwait(false);
         return ProtectedData.Unprotect(encrypted, null, DataProtectionScope.CurrentUser);
     }
+
+    internal Task<PinnedClipboardItem?> ReadModelAsync(string id, CancellationToken cancellationToken = default)
+        => ReadAsync(GetDataPath(id), cancellationToken);
+
+    internal long StoredSize(string id)
+        => new[] { GetDataPath(id), GetImagePath(id) }.Where(File.Exists).Sum(path => new FileInfo(path).Length);
 
     private static string SafeFileName(string id)
     {
